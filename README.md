@@ -19,10 +19,12 @@
 
 - 2 AWS Accounts
     - Control Plane Account
+        - S3 bucket for Terraform backend
     - Data Plane Account
 - AWS SSO
 - VPC and Subnet IDs
 - terraform 1.5.0
 - AWS CLI >= 2.3.1
 - jq 1.6
-- 
+
+Tag your subnets with: karpenter-discovery = $cluster-name

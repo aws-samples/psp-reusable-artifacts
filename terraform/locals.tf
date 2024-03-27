@@ -15,6 +15,10 @@ locals {
 
   node_group_name = "managed-ondemand"
 
+  crossplane_namespace = "crossplane-system"
+  crossplane_sa        = "provider-aws"
+
+
   gitops_addons_url      = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
   gitops_addons_basepath = var.gitops_addons_basepath
   gitops_addons_path     = var.gitops_addons_path
@@ -51,6 +55,8 @@ locals {
     enable_ack_emrcontainers                     = try(var.addons.enable_ack_emrcontainers, false)
     enable_ack_sfn                               = try(var.addons.enable_ack_sfn, false)
     enable_ack_eventbridge                       = try(var.addons.enable_ack_eventbridge, false)
+    enable_aws_crossplane_provider               = try(var.addons.enable_aws_crossplane_provider, false)
+    enable_aws_crossplane_upbound_provider       = try(var.addons.enable_aws_crossplane_upbound_provider, false)
   }
   oss_addons = {
     enable_argocd                          = try(var.addons.enable_argocd, true)
@@ -67,6 +73,9 @@ locals {
     enable_prometheus_adapter              = try(var.addons.enable_prometheus_adapter, false)
     enable_secrets_store_csi_driver        = try(var.addons.enable_secrets_store_csi_driver, false)
     enable_vpa                             = try(var.addons.enable_vpa, false)
+    enable_crossplane                      = try(var.addons.enable_crossplane, false)
+    enable_crossplane_kubernetes_provider  = try(var.addons.enable_crossplane_kubernetes_provider, false)
+    enable_crossplane_helm_provider        = try(var.addons.enable_crossplane_helm_provider, false)
   }
   addons = merge(
     local.aws_addons,
@@ -83,6 +92,10 @@ locals {
       aws_account_id   = data.aws_caller_identity.current.account_id
       aws_vpc_id       = var.VPCID
     },
+     {
+      aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
+      aws_upbound_crossplane_iam_role_arn = module.crossplane_irsa_aws.iam_role_arn
+    },
     {
       addons_repo_url      = local.gitops_addons_url
       addons_repo_basepath = local.gitops_addons_basepath
@@ -96,6 +109,7 @@ locals {
       workload_repo_revision = local.gitops_workload_revision
     }
   )
+
 
   tags = {
     Blueprint  = local.name

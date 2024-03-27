@@ -34,8 +34,13 @@ variable "addons" {
   default = {
     enable_aws_load_balancer_controller = true
     enable_metrics_server               = true
-    enable_argocd               = true
-    enable_karpenter             = true
+    enable_argocd                       = true
+    enable_karpenter                    = true
+    enable_aws_crossplane_provider         = false # installs aws contrib provider
+    enable_aws_crossplane_upbound_provider = true # installs aws upbound provider
+    enable_crossplane_kubernetes_provider  = true # installs kubernetes provider
+    enable_crossplane_helm_provider        = true # installs helm provider
+    enable_crossplane                      = true # installs crossplane core
   }
 }
 # Addons Git
