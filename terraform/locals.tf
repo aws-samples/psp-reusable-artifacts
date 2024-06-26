@@ -8,8 +8,10 @@ locals {
   allowed_public_cidrs            = ["0.0.0.0/0"]
   cluster_endpoint_private_access = true
 
-  vpc_id= var.VPCID
-  private_subnets = ["subnet-08ef989efe2883d5a","subnet-0bd98054937fee9eb"]
+  vpc_id= var.vpcid
+  private_subnets_nodes = var.privatesubnetids_nodes
+  private_subnets_pods = var.privatesubnetids_pods
+  public_subnets = var.publicsubnetids
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
   # private_subnets = var.PRIVATESUBNETSID
 
@@ -90,7 +92,7 @@ locals {
       aws_cluster_name = local.name
       aws_region       = local.region
       aws_account_id   = data.aws_caller_identity.current.account_id
-      aws_vpc_id       = var.VPCID
+      aws_vpc_id       = var.vpcid
     },
      {
       aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn

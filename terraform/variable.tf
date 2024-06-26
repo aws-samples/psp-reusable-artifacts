@@ -1,33 +1,45 @@
-variable "MANAGEMENTACCOUNTID" {
+variable "managementaccountid" {
   type      = string
   sensitive = true
 }
 
-variable "CONTROLPLANEACCOUNTID" {
+variable "controlplaneaccountid" {
   type      = string
   sensitive = true
 }
 
-variable "VPCID" {
+variable "vpcid" {
   type      = string
   sensitive = true
 }
 
-# variable "PRIVATESUBNETSID" {
-#   type      = list(string)
-#   sensitive = true
-# }
+variable "privatesubnetids_nodes" {
+  type      = list(string)
+  sensitive = true
+}
+
+variable "privatesubnetids_pods" {
+  type      = list(string)
+  sensitive = true
+}
+
+variable "publicsubnetids" {
+  type      = list(string)
+  sensitive = true
+}
 
 variable "region" {
   description = "AWS region"
   type        = string
   default     = "us-east-1"
 }
+
 variable "kubernetes_version" {
   description = "Kubernetes version"
   type        = string
   default     = "1.28"
 }
+
 variable "addons" {
   description = "Kubernetes addons"
   type        = any
@@ -97,3 +109,7 @@ variable "gitops_workload_path" {
   default     = "getting-started-argocd/k8s"
 }
 
+variable "s3buckettfstate" {
+  type      = string
+  sensitive = true
+}

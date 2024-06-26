@@ -1,15 +1,15 @@
 provider "aws" {
   region = data.aws_region.current.name
-  alias  = "virginia"
+  alias  = "controlplaneaccount"
 }
 
-provider "aws" {
-  region = data.aws_region.current.name
-  assume_role {
-    role_arn     = "arn:aws:iam::${var.MANAGEMENTACCOUNTID}:role/GithubActionsRole-CreatePermissionSets"
-  }
-  alias = "mgmt-account"
-}
+# provider "aws" {
+#   region = data.aws_region.current.name
+#   assume_role {
+#     role_arn     = "arn:aws:iam::${var.MANAGEMENTACCOUNTID}:role/GithubActionsRole-CreatePermissionSets"
+#   }
+#   alias = "mgmt-account"
+# }
 
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint

@@ -1,0 +1,116 @@
+# This is a basic workflow to help you get started with Actions
+name: Connect to an AWS role from a GitHub repository
+
+# Controls when the action will run. Invokes the workflow on push events but only for the main branch
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION : "us-east-1" #Change to reflect your Region
+  TERRAFORM_WORKING_DIR : "terraform"
+
+# Permission can be added at job level or workflow level    
+permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: read    # This is required for actions/checkout
+jobs:
+  AssumeRoleAndCallIdentity:
+    runs-on: ubuntu-latest
+    env:
+      TF_VAR_MANAGEMENTACCOUNTID: ${{ vars.MANAGEMENTACCOUNTID }}
+      TF_VAR_CONTROLPLANEACCOUNTID: ${{ vars.CONTROLPLANEACCOUNTID }}
+      TF_VAR_VPCID: ${{ vars.VPCID }}
+      TF_VAR_gitops_addons_org: ${{ vars.GITOPS_ADDONS_ORG }}
+      TF_VAR_gitops_addons_repo: ${{ vars.GITOPS_ADDONS_REPO }}
+      TF_VAR_gitops_addons_revision: ${{ vars.GITOPS_ADDONS_REVISION }}
+      TF_VAR_gitops_workload_org: ${{ vars.GITOPS_WORKLOAD_ORG }}
+      TF_VAR_gitops_workload_repo: ${{ vars.GITOPS_WORKLOAD_REPO }}
+      TF_VAR_gitops_workload_revision: ${{ vars.GITOPS_WORKLOAD_REVISION }}
+      TF_VAR_PRIVATESUBNETIDS_NODES: ${{ vars.PRIVATESUBNETIDS_NODES }}
+      TF_VAR_PRIVATESUBNETIDS_PODS: ${{ vars.PRIVATESUBNETIDS_PODS }}
+      TF_VAR_PUBLICSUBNETIDS: ${{ vars.PUBLICSUBNETIDS }}
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v3
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.CONTROLPLANEACCOUNTID }}:role/GitHubAction-AssumeRoleWithAction #change to reflect your IAM role’s ARN
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0"
+      # Hello from AWS: WhoAmI
+      - name: Sts GetCallerIdentity
+        run: |
+          aws sts get-caller-identity
+     # - name: Upload file to bucket
+      #  run: |
+      #    aws s3api put-object --bucket psp-controlplane-remotestate --key main.tf --body $GITHUB_WORKSPACE/terraform/main.tf
+      - name: Terraform fmt
+        id: fmt
+        working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+        run: terraform fmt -check
+        continue-on-error: true
+      - name: Terraform Init
+        id: init
+        working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+        run: terraform init
+      - name: Terraform Validate
+        id: validate
+        working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+        run: terraform validate -no-color
+      # - name: Terraform Destroy
+      #   working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+      #   id: destroy
+      #   run: terraform destroy -auto-approve -no-color
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+        run: terraform plan -no-color
+        continue-on-error: true
+      - name: Terraform Apply
+        working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+        id: apply
+        run: terraform apply -auto-approve -no-color
+      # # - uses: actions/github-script@v6
+      # #   if: github.event_name == 'push'
+      # #   env:
+      # #     PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      # #   with:
+      # #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      # #     script: |
+      # #       const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+      # #       #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+      # #       #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+      # #       <details><summary>Validation Output</summary>
+      
+      # #       \`\`\`\n
+      # #       ${{ steps.validate.outputs.stdout }}
+      # #       \`\`\`
+      
+      # #       </details>
+      
+      # #       #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+      
+      # #       <details><summary>Show Plan</summary>
+      
+      # #       \`\`\`\n
+      # #       ${process.env.PLAN}
+      # #       \`\`\`
+      
+      # #       </details>
+      
+      # #       *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.TERRAFORM_WORKING_DIR }}\`, Workflow: \`${{ github.workflow }}\`*`;
+      
+      # #       github.rest.issues.createComment({
+      # #         issue_number: context.issue.number,
+      # #         owner: context.repo.owner,
+      # #         repo: context.repo.repo,
+      # #         body: output
+      # #       })

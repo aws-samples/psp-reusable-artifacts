@@ -15,7 +15,7 @@ module "eks" {
   kms_key_aliases = [local.name] # Backwards compat
 
   vpc_id     = local.vpc_id
-  subnet_ids = local.private_subnets
+  subnet_ids = local.private_subnets_nodes
 
   create_cluster_security_group = false
   create_node_security_group    = false
@@ -55,13 +55,13 @@ module "eks" {
 #   )
   manage_aws_auth_configmap = true
   aws_auth_roles = flatten([
-    {
-      rolearn  = "arn:aws:iam::787843526639:role/AWSReservedSSO_AWSAdministratorAccess_ba0ccc6c0012ab35"
-      username = "admin"
-      groups   = ["system:masters"]
-    },
-    module.operators_team.aws_auth_configmap_role,
-    module.developers_team.aws_auth_configmap_role,
+    # {
+    #   rolearn  = "arn:aws:iam::787843526639:role/AWSReservedSSO_AWSAdministratorAccess_ba0ccc6c0012ab35"
+    #   username = "admin"
+    #   groups   = ["system:masters"]
+    # },
+    # module.operators_team.aws_auth_configmap_role,
+    # module.developers_team.aws_auth_configmap_role,
     {
       rolearn  = module.eks_blueprints_addons.karpenter.node_iam_role_arn
       username = "system:node:{{EC2PrivateDNSName}}"
