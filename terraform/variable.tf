@@ -1,11 +1,18 @@
-variable "managementaccountid" {
+variable "controlplaneaccountid" {
   type      = string
   sensitive = true
 }
 
-variable "controlplaneaccountid" {
-  type      = string
-  sensitive = true
+variable "name" {
+  description = "Prefix name"
+  type        = string
+  default     = "psp-controlplane"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "psp-controlplane"
 }
 
 variable "vpcid" {
@@ -13,19 +20,17 @@ variable "vpcid" {
   sensitive = true
 }
 
+
 variable "privatesubnetids_nodes" {
-  type      = list(string)
-  sensitive = true
+  type = list(string)
 }
 
 variable "privatesubnetids_pods" {
-  type      = list(string)
-  sensitive = true
+  type = list(string)
 }
 
 variable "publicsubnetids" {
-  type      = list(string)
-  sensitive = true
+  type = list(string)
 }
 
 variable "region" {
@@ -34,25 +39,32 @@ variable "region" {
   default     = "us-east-1"
 }
 
+
+# variable "addons_apps" {
+#   description = "Folder bootstrap of addons"
+#   type        = string
+#   default     = file("${path.module}/bootstrap/addons.yaml")
+# }
+
 variable "kubernetes_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.28"
+  default     = "1.30"
 }
 
 variable "addons" {
   description = "Kubernetes addons"
   type        = any
   default = {
-    enable_aws_load_balancer_controller = true
-    enable_metrics_server               = true
-    enable_argocd                       = true
-    enable_karpenter                    = true
+    enable_aws_load_balancer_controller    = true
+    enable_metrics_server                  = true
+    enable_argocd                          = true
+    enable_karpenter                       = true
     enable_aws_crossplane_provider         = false # installs aws contrib provider
-    enable_aws_crossplane_upbound_provider = true # installs aws upbound provider
-    enable_crossplane_kubernetes_provider  = true # installs kubernetes provider
-    enable_crossplane_helm_provider        = true # installs helm provider
-    enable_crossplane                      = true # installs crossplane core
+    enable_aws_crossplane_upbound_provider = true  # installs aws upbound provider
+    enable_crossplane_kubernetes_provider  = true  # installs kubernetes provider
+    enable_crossplane_helm_provider        = true  # installs helm provider
+    enable_crossplane                      = true  # installs crossplane core
   }
 }
 # Addons Git
@@ -107,9 +119,4 @@ variable "gitops_workload_path" {
   description = "Git repository path for workload"
   type        = string
   default     = "getting-started-argocd/k8s"
-}
-
-variable "s3buckettfstate" {
-  type      = string
-  sensitive = true
 }

@@ -1,6 +1,12 @@
 provider "aws" {
-  region = data.aws_region.current.name
-  alias  = "controlplaneaccount"
+  region = local.region
+  # alias  = "controlplaneaccount"
+}
+# Find the user currently in use by AWS
+data "aws_caller_identity" "current" {}
+# Availability zones to use in our solution
+data "aws_availability_zones" "available" {
+  state = "available"
 }
 
 # provider "aws" {
@@ -43,6 +49,15 @@ provider "kubectl" {
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
   load_config_file       = false
   token                  = data.aws_eks_cluster_auth.this.token
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    # This requires the awscli to be installed locally where Terraform is executed
+    args = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", local.region]
+  }
+}
+data "aws_eks_cluster_auth" "this" {
+  name = module.eks.cluster_name
 }
 
 # resource "aws_s3_bucket" "s3Bucket" {

@@ -1,0 +1,36 @@
+{{- if and (.Values.keda) (.Values.keda.enable) -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keda
+  namespace: {{ .Values.argoNamespace | default "argocd" }}
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argoProject | default "default" }}
+  source:
+    repoURL: {{ .Values.repoUrl }}
+    path: add-ons/keda
+    targetRevision: {{ .Values.targetRevision }}
+    helm:
+      values: |
+        keda:
+        {{- toYaml .Values.keda | nindent 10 }}
+      parameters:
+      - name: keda.serviceAccount.name
+        value: {{ .Values.keda.serviceAccountName }}
+  destination:
+    server: {{ .Values.destinationServer | default "https://kubernetes.default.svc" }}
+    namespace: keda
+  syncPolicy:
+    automated:
+      prune: true
+    syncOptions:
+      - CreateNamespace={{ .Values.keda.createNamespace }}
+    retry:
+      limit: 1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
+{{- end -}}

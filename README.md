@@ -28,6 +28,13 @@ Create PSP ControlPlane Execution Role. This role is your Platform Master Execut
 - ECRFullAccess
 - S3FullAccess
 - EKSFullAccess (customer managed inline policy)
+- AmazonEC2ContainerRegistryFullAccess
+- AmazonEventBridgeFullAccess
+- AmazonSQSFullAccess
+- CloudWatchLogsFullAccess
+- IAMFullAccess
+- KMSTagResource (customer managed inline policy)
+- STSandECRAccess (customer managed inline policy)
 
 You can use the following AWS CLI commands:
 
@@ -40,7 +47,11 @@ aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn a
 ```
 
 ```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonEC2FullAccess
+aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/IAMFullAccess
+```
+
+```bash
+aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
 ```
 
 ```bash
@@ -48,11 +59,31 @@ aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn a
 ```
 
 ```bash
+aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess
+```
+
+```bash
+aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonEC2FullAccess
+```
+
+```bash
 aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
 ```
 
 ```bash
+aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonSQSFullAccess
+```
+
+```bash
 aws iam put-role-policy --role-name PSP-ControlPlane-Execution --policy-name AmazonEKSFullAccess --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["eks:*"],"Resource":["*"]}]}'
+```
+
+```bash
+aws iam put-role-policy --role-name PSP-ControlPlane-Execution --policy-name AmazonKMSFullAccess --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["kms:*"],"Resource":["*"]}]}'
+```
+
+```bash
+aws iam put-role-policy --role-name PSP-ControlPlane-Execution --policy-name STSandECR --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ecr-public:GetAuthorizationToken","sts:GetServiceBearerToken"],"Resource":["*"]}]}'
 ```
 
 After role creation, before continue Assume the PSP-ControlPlane-Execution role to provision your controlplane. To configure AWS CLI user with Role check AWS Documentation [here](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-role.html) .
@@ -67,8 +98,18 @@ By the end o this step, you should have a AWS CLI configured with a PSP-ControlP
 
 ## S3 for TFState Persistance
 Change your bucket name (must be unique) and AWS region
-```
+```bash
 aws s3api create-bucket --bucket $BUCKETNAME --region $AWSREGION
+```
+## Change bucket name and region inside terraform file 
+file: terraform/versions.tf
+
+```bash
+backend "s3" {
+       bucket = "BUCKETNAME"
+       key    = "controlplane/tfstate/psp-controlplane.tfstate"
+       region = "REGION"
+   }
 ```
 
 
@@ -111,15 +152,32 @@ OPTIONAL (if using AWS Identity Center integration)
 ```bash
 export TF_VAR_controlplaneaccountid=CONTROLPLANE_ACCOUNT_ID
 export TF_VAR_vpcid=VPC_ID
-export TF_VAR_privatesubnetids_nodes={SUBNETID1, SUBNETID2, SUBNETID3}
-export TF_VAR_privatesubnetids_pods={SUBNETID1, SUBNETID2, SUBNETID3}
-export TF_VAR_publicsubnetids={SUBNETID1, SUBNETID2, SUBNETID3}
+export TF_VAR_privatesubnetids_nodes='["SUBNETID1","SUBNETID2","SUBNETID3"]'
+export TF_VAR_privatesubnetids_pods='["SUBNETID1","SUBNETID2","SUBNETID3"]'
+export TF_VAR_publicsubnetids='["SUBNETID1","SUBNETID2","SUBNETID3"]'
 export TF_VAR_gitops_addons_org=https://GITURL/ORGNAME
 export TF_VAR_gitops_addons_repo=ADDONSREPONAME
 export TF_VAR_gitops_addons_revision=main
 export TF_VAR_gitops_workloads_org=https://GITURL/ORGNAME
 export TF_VAR_gitops_workloads_repo=WORKLOADREPONAME
 export TF_VAR_gitops_workloads_revision=main
+```
+
+## Terraform apply
+cd terraform 
+terraform apply
+
+## Role to access EKS Cluster
+```bash
+aws eks update-cluster-config --name psp-controlplane --access-config authenticationMode=API_AND_CONFIG_MAP
+```
+
+```bash
+aws eks create-access-entry --cluster-name cluster-name --principal-arn arn:aws:iam::accountID:role/role-name --kubernetes-groups masters
+```
+
+```bash
+aws eks associate-access-policy --cluster-name cluster-name --principal-arn arn:aws:iam::accountID:role/iam-principal-arn --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy --access-scope type=cluster 
 ```
 
 

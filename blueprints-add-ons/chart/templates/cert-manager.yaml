@@ -1,0 +1,36 @@
+{{- if and (.Values.certManager) (.Values.certManager.enable) -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: {{ .Values.argoNamespace | default "argocd" }}
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argoProject | default "default" }}
+  source:
+    repoURL: {{ .Values.repoUrl }}
+    path: add-ons/cert-manager
+    targetRevision: {{ .Values.targetRevision }}
+    helm:
+      values: |
+        cert-manager:
+        {{- toYaml .Values.certManager | nindent 10 }}
+      parameters:
+      - name: cert-manager.serviceAccount.name
+        value: {{ .Values.certManager.serviceAccountName }}
+  destination:
+    server: {{ .Values.destinationServer | default "https://kubernetes.default.svc" }}
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+    syncOptions:
+      - CreateNamespace={{ .Values.certManager.createNamespace }}
+    retry:
+      limit: 1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
+{{- end -}}

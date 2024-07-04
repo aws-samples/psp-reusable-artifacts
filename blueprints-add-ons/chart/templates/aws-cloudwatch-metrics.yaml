@@ -1,0 +1,38 @@
+{{- if and (.Values.awsCloudWatchMetrics) (.Values.awsCloudWatchMetrics.enable) -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-cloudwatch-metrics
+  namespace: {{ .Values.argoNamespace | default "argocd" }}
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argoProject | default "default" }}
+  source:
+    repoURL: {{ .Values.repoUrl }}
+    path: add-ons/aws-cloudwatch-metrics
+    targetRevision: {{ .Values.targetRevision }}
+    helm:
+      values: |
+        aws-cloudwatch-metrics:
+        {{- toYaml .Values.awsCloudWatchMetrics | nindent 10 }}
+      parameters:
+      - name: aws-cloudwatch-metrics.clusterName
+        value: {{ .Values.clusterName }}
+      - name: aws-cloudwatch-metrics.serviceAccount.name
+        value: {{ .Values.awsCloudWatchMetrics.serviceAccountName }}
+  destination:
+    server: {{ .Values.destinationServer | default "https://kubernetes.default.svc" }}
+    namespace: amazon-cloudwatch
+  syncPolicy:
+    automated:
+      prune: true
+    syncOptions:
+      - CreateNamespace={{ .Values.awsCloudWatchMetrics.createNamespace }}
+    retry:
+      limit: 1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
+{{- end -}}

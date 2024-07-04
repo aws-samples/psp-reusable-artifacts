@@ -1,0 +1,48 @@
+{{- if and (.Values.prometheus) (.Values.prometheus.enable) -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: {{ .Values.argoNamespace | default "argocd" }}
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argoProject | default "default" }}
+  source:
+    repoURL: {{ .Values.repoUrl }}
+    path: add-ons/prometheus
+    targetRevision: {{ .Values.targetRevision }}
+    helm:
+      values: |
+        prometheus:
+        {{- toYaml .Values.prometheus | nindent 10 }}
+      parameters:
+      {{ if .Values.prometheus.serviceAccountName }}
+      - name: prometheus.serviceAccounts.server.name
+        value: {{ .Values.prometheus.serviceAccountName }}
+      {{ end }}
+      {{ if .Values.prometheus.roleArn }}
+      - name: prometheus.serviceAccounts.server.annotations.eks\.amazonaws\.com/role-arn
+        value: {{ .Values.prometheus.roleArn }}
+      {{ end }}
+      {{ if .Values.prometheus.ampWorkspaceUrl }}
+      - name: prometheus.server.remoteWrite[0].url
+        value: {{ .Values.prometheus.ampWorkspaceUrl }}
+      - name: prometheus.server.remoteWrite[0].sigv4.region
+        value: {{ .Values.region }}
+      {{ end }}
+  destination:
+    server: {{ .Values.destinationServer | default "https://kubernetes.default.svc" }}
+    namespace: prometheus
+  syncPolicy:
+    automated:
+      prune: true
+    syncOptions:
+      - CreateNamespace={{ .Values.prometheus.createNamespace }}
+    retry:
+      limit: 1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
+{{- end -}}

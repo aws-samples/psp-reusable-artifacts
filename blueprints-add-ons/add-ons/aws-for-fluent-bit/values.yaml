@@ -1,0 +1,14 @@
+aws-for-fluent-bit:
+  serviceAccount:
+    create: false
+
+  cloudWatch:
+
+  firehose:
+
+  kinesis:
+
+  elasticsearch:
+
+  tolerations:
+    - operator: 'Exists'

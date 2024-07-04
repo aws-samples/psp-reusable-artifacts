@@ -1,25 +1,24 @@
 locals {
   #name            = basename(path.cwd)
-  name = "psp-controlplane"
-  region          = data.aws_region.current.name
+  name            = var.name
+  environment     = var.environment
+  region          = var.region
   cluster_version = var.kubernetes_version
 
   cluster_endpoint_public_access  = true
   allowed_public_cidrs            = ["0.0.0.0/0"]
   cluster_endpoint_private_access = true
 
-  vpc_id= var.vpcid
+  vpc_id                = var.vpcid
   private_subnets_nodes = var.privatesubnetids_nodes
-  private_subnets_pods = var.privatesubnetids_pods
-  public_subnets = var.publicsubnetids
-  azs      = slice(data.aws_availability_zones.available.names, 0, 3)
-  # private_subnets = var.PRIVATESUBNETSID
+  private_subnets_pods  = var.privatesubnetids_pods
+  public_subnets        = var.publicsubnetids
+  azs                   = slice(data.aws_availability_zones.available.names, 0, 3)
 
   node_group_name = "managed-ondemand"
 
   crossplane_namespace = "crossplane-system"
   crossplane_sa        = "provider-aws"
-
 
   gitops_addons_url      = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
   gitops_addons_basepath = var.gitops_addons_basepath
@@ -86,18 +85,23 @@ locals {
     { aws_cluster_name = local.name }
   )
 
+  argocd_apps = {
+    addons = file("../bootstrap/addons.yaml")
+    #workloads = file("${path.module}/bootstrap/workloads.yaml")
+  }
+
   addons_metadata = merge(
-    module.eks_blueprints_addons.gitops_metadata,
+    # module.eks_blueprints_addons.gitops_metadata,
     {
       aws_cluster_name = local.name
       aws_region       = local.region
       aws_account_id   = data.aws_caller_identity.current.account_id
       aws_vpc_id       = var.vpcid
     },
-     {
-      aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
-      aws_upbound_crossplane_iam_role_arn = module.crossplane_irsa_aws.iam_role_arn
-    },
+    # {
+    #   aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
+    #   aws_upbound_crossplane_iam_role_arn = module.crossplane_irsa_aws.iam_role_arn
+    # },
     {
       addons_repo_url      = local.gitops_addons_url
       addons_repo_basepath = local.gitops_addons_basepath
@@ -111,7 +115,10 @@ locals {
       workload_repo_revision = local.gitops_workload_revision
     }
   )
-
+  argocd_apps = {
+    addons    = file("../bootstrap/addons.yaml")
+    workloads = file("../bootstrap/workloads.yaml")
+  }
 
   tags = {
     Blueprint  = local.name
