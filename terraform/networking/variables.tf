@@ -1,7 +1,7 @@
 variable "vpc_cidr" {
   description = "VPC CIDR"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "10.255.0.0/16"
 }
 variable "vpc_secondary_cidr" {
   description = "VPC CIDR secundary RFC6598"
@@ -18,7 +18,7 @@ variable "region" {
 variable "name" {
   description = "Prefix name"
   type        = string
-  default     = "cp-networking"
+  default     = "psp-controlplane-vpc"
 }
 
 variable "environment" {

@@ -54,9 +54,9 @@ spec:
             releaseName: '{{values.addonChart}}'
             ignoreMissingValueFiles: true
             valueFiles:
-              - $values/{{metadata.annotations.addons_repo_basepath}}charts/addons/{{values.addonChart}}/values.yaml
-              - $values/{{metadata.annotations.addons_repo_basepath}}environments/{{metadata.labels.environment}}/addons/{{values.addonChart}}/values.yaml
-              - $values/{{metadata.annotations.addons_repo_basepath}}clusters/{{name}}/addons/{{values.addonChart}}/values.yaml
+              - $values/{{metadata.annotations.addons_repo_basepath}}argocd/charts/addons/{{values.addonChart}}/values.yaml
+              - $values/{{metadata.annotations.addons_repo_basepath}}argocd/environments/{{metadata.labels.environment}}/addons/{{values.addonChart}}/values.yaml
+              - $values/{{metadata.annotations.addons_repo_basepath}}argocd/clusters/{{name}}/addons/{{values.addonChart}}/values.yaml
             values: |
               settings:
                 clusterName: {{metadata.annotations.aws_cluster_name}}
@@ -66,21 +66,14 @@ spec:
                 name: {{metadata.annotations.karpenter_service_account}}
                 annotations:
                   eks.amazonaws.com/role-arn: {{metadata.annotations.karpenter_iam_role_arn}}
-        # - chart: karpenter-config/karpenter-config'
-        #   repoURL: 'https://github.com/JOAMELO-ORG/eks-blueprints-add-ons/add-ons/karpenter-config'
-        #   targetRevision: 0.1.0
-        #   helm:
-        #     releaseName: karpenter-config
-        #     ignoreMissingValueFiles: true
-        #   values: |
-        #     role: {{metadata.annotations.karpenter_node_iam_role_name}}
-        #     cluster-name: {{metadata.annotations.aws_cluster_name}}
-        - repoURL: 'https://github.com/JOAMELO-ORG/eks-blueprints-add-ons'
+        - repoURL: '{{metadata.annotations.addons_repo_url}}'
+          # chart: karpenter-config
+          path: blueprints-add-ons/add-ons/karpenter-config/
           targetRevision: '{{metadata.annotations.addons_repo_revision}}'
-          path: add-ons/karpenter-config
-          # values: |
-          #   role: {{metadata.annotations.karpenter_node_iam_role_name}}
-          #   cluster-name: {{metadata.annotations.aws_cluster_name}}
+          helm:
+            values: |
+             role: {{metadata.annotations.karpenter_node_iam_role_name}}
+             clustername: {{metadata.annotations.aws_cluster_name}}
       destination:
         namespace: '{{metadata.annotations.karpenter_namespace}}'
         name: '{{name}}'
@@ -92,5 +85,5 @@ spec:
       info:
       - name: role
         value: "{{metadata.annotations.karpenter_node_iam_role_name}}"
-      - name: cluster-name
+      - name: clustername
         value: "{{metadata.annotations.aws_cluster_name}}"

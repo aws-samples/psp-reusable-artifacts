@@ -65,58 +65,66 @@ variable "addons" {
     enable_crossplane_kubernetes_provider  = true  # installs kubernetes provider
     enable_crossplane_helm_provider        = true  # installs helm provider
     enable_crossplane                      = true  # installs crossplane core
+    enable_prometheus_adapter              = true
+    enable_kube_prometheus_stack           = true
+    enable_gatekeeper                      = true
   }
 }
 # Addons Git
 variable "gitops_addons_org" {
   description = "Git repository org/user contains for addons"
   type        = string
-  default     = "https://github.com/aws-samples"
+  default     = "git@github.com:JOAMELO-ORG"
 }
 variable "gitops_addons_repo" {
   description = "Git repository contains for addons"
   type        = string
-  default     = "eks-blueprints-add-ons"
+  default     = "psp-controlplane"
 }
 variable "gitops_addons_revision" {
   description = "Git repository revision/branch/ref for addons"
   type        = string
-  default     = "main"
+  default     = "psp-aws-ia"
 }
 variable "gitops_addons_basepath" {
   description = "Git repository base path for addons"
   type        = string
-  default     = "argocd/"
+  default     = "blueprints-add-ons/"
 }
 variable "gitops_addons_path" {
   description = "Git repository path for addons"
   type        = string
-  default     = "bootstrap/control-plane/addons"
+  default     = "argocd/bootstrap/control-plane/addons"
 }
 
 # Workloads Git
 variable "gitops_workload_org" {
   description = "Git repository org/user contains for workload"
   type        = string
-  default     = "https://github.com/aws-ia"
+  default     = "git@github.com:JOAMELO-ORG"
 }
 variable "gitops_workload_repo" {
   description = "Git repository contains for workload"
   type        = string
-  default     = "terraform-aws-eks-blueprints"
+  default     = "psp-controlplane"
 }
 variable "gitops_workload_revision" {
   description = "Git repository revision/branch/ref for workload"
   type        = string
-  default     = "main"
+  default     = "psp-aws-ia"
 }
 variable "gitops_workload_basepath" {
   description = "Git repository base path for workload"
   type        = string
-  default     = "patterns/gitops/"
+  default     = "crossplane-templates/"
 }
 variable "gitops_workload_path" {
   description = "Git repository path for workload"
   type        = string
-  default     = "getting-started-argocd/k8s"
+  default     = "components"
+}
+variable "ssh_key_path" {
+  description = "SSH key path for git access"
+  type        = string
+  default     = "~/.ssh/id_rsa"
 }

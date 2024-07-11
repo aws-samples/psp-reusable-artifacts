@@ -36,57 +36,15 @@ Create PSP ControlPlane Execution Role. This role is your Platform Master Execut
 - KMSTagResource (customer managed inline policy)
 - STSandECRAccess (customer managed inline policy)
 
-You can use the following AWS CLI commands:
+Export your AWS AccountID to be used as a Control Plane account (replace the AccountID with your Control Plane account ID):
 
 ```bash
-aws iam create-role --role-name PSP-ControlPlane-Execution --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::$CONTROLPLANE_ACCOUNT_ID:root"},"Action":"sts:AssumeRole"}]}'
+export CONTROLPLANE_ACCOUNT_ID=ACCOUNTID
+chmod 700 ./setup.sh
+./setup.sh
 ```
 
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonVPCFullAccess
-```
-
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/IAMFullAccess
-```
-
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
-```
-
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
-```
-
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess
-```
-
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonEC2FullAccess
-```
-
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
-```
-
-```bash
-aws iam attach-role-policy --role-name PSP-ControlPlane-Execution --policy-arn arn:aws:iam::aws:policy/AmazonSQSFullAccess
-```
-
-```bash
-aws iam put-role-policy --role-name PSP-ControlPlane-Execution --policy-name AmazonEKSFullAccess --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["eks:*"],"Resource":["*"]}]}'
-```
-
-```bash
-aws iam put-role-policy --role-name PSP-ControlPlane-Execution --policy-name AmazonKMSFullAccess --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["kms:*"],"Resource":["*"]}]}'
-```
-
-```bash
-aws iam put-role-policy --role-name PSP-ControlPlane-Execution --policy-name STSandECR --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ecr-public:GetAuthorizationToken","sts:GetServiceBearerToken"],"Resource":["*"]}]}'
-```
-
-After role creation, before continue Assume the PSP-ControlPlane-Execution role to provision your controlplane. To configure AWS CLI user with Role check AWS Documentation [here](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-role.html) .
+Before continue, Assume the new PSP-ControlPlane-Execution role to provision your controlplane. To configure AWS CLI user with Role check AWS Documentation [here](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-role.html) .
 
 Ensure that you are using the correct role with the following command
 ```
@@ -101,7 +59,7 @@ Change your bucket name (must be unique) and AWS region
 ```bash
 aws s3api create-bucket --bucket $BUCKETNAME --region $AWSREGION
 ```
-## Change bucket name and region inside terraform file 
+Change bucket name and region inside terraform file 
 file: terraform/versions.tf
 
 ```bash
@@ -111,6 +69,8 @@ backend "s3" {
        region = "REGION"
    }
 ```
+
+This ensure that your TFState files will be securely stored in Amazon S3 bucket.
 
 
 ## Networking
@@ -132,23 +92,28 @@ You can use networking folder of this repo to help provisioning networking infra
 
 
 ## Environment Variables
-Export the following terraform variables (you can also set a tfvars file):
 
-- TF_VAR_controlplaneaccountid: AWS Account ID where you want to deploy your PSP Control Plane cluster
-- TF_VAR_vpcid: VPC ID where you want to deploy your PSP Control Plane cluster
-- TF_VAR_privatesubnetids_nodes: Array of Subnet IDs where your EKS Nodes will have the primary interface (outside VPC communication). It is recommended to be on at least 3 different AZs.
-- TF_VAR_privatesubnetids_pods: Array of Subnet IDs where VPC-CNI will allocate IPs for Pods. It is recommended to use CGNAT IPs of RFC6598 (100.64.0.0/10). It is recommended to be on at least 3 different AZs.
-- TF_VAR_publicsubnetids: Array of Subnet IDs to be used by External Load Balancers. It is recommended to be on at least 3 different AZs.
-- TF_VAR_gitops_addons_org: Your Git Organization URL for your Platform Addons (eg.: https://github.com/aws-samples)
-- TF_VAR_gitops_addons_repo: Name of your Platform Addons repo (eg.: eks-blueprints-add-ons)
-- TF_VAR_gitops_addons_revision: Git repository revision/branch/ref for your Platform Addons (eg.: main)
-- TF_VAR_gitops_workload_org: Your Git Organization URL for your Platform Workloads (eg.: https://github.com/aws-samples)
-- TF_VAR_gitops_workload_repo: Name of your Platform Workloads repo (eg.: eks-blueprints-add-ons)
-- TF_VAR_gitops_workload_revision: Git repository revision/branch/ref for your Platform Workloads (eg.: main)
+Replace the **variables.tfvars** file with the following content:
+
+- **controlplaneaccountid**: AWS Account ID where you want to deploy your PSP Control Plane cluster
+
+- **vpcid**: VPC ID where you want to deploy your PSP Control Plane cluster
+
+- **privatesubnetids_nodes**: Array of Subnet IDs where your EKS Nodes will have the primary interface (outside VPC communication). It is recommended to be on at least 3 different AZs.
+
+- **privatesubnetids_pods**: Array of Subnet IDs where VPC-CNI will allocate IPs for Pods. It is recommended to use CGNAT IPs of RFC6598 (100.64.0.0/10). It is recommended to be on at least 3 different AZs.
+- **publicsubnetids**: Array of Subnet IDs to be used by External Load Balancers. It is recommended to be on at least 3 different AZs.
+- **gitops_addons_org**: Your Git Organization URL for your Platform Addons (eg.: git@github.com:aws-samples)
+- **gitops_addons_repo**: Name of your Platform Addons repo (eg.: eks-blueprints-add-ons)
+- **gitops_addons_revision**: Git repository revision/branch/ref for your Platform Addons (eg.: main)
+- **gitops_workload_org**: Your Git Organization URL for your Platform Workloads (eg.: https://github.com/aws-samples)
+- **gitops_workload_repo**: Name of your Platform Workloads repo (eg.: eks-blueprints-add-ons)
+- **gitops_workload_revision**: Git repository revision/branch/ref for your Platform Workloads (eg.: main)
 
 OPTIONAL (if using AWS Identity Center integration)
-- TF_VAR_MANAGEMENTACCOUNTID: Your Managements Account ID
+- **managementaccountid**: Your Managements Account ID
 
+You can also export the variables manually using the following commands:
 ```bash
 export TF_VAR_controlplaneaccountid=CONTROLPLANE_ACCOUNT_ID
 export TF_VAR_vpcid=VPC_ID
@@ -164,8 +129,11 @@ export TF_VAR_gitops_workloads_revision=main
 ```
 
 ## Terraform apply
-cd terraform 
-terraform apply
+```bash
+cd psp-controlplane/terraform 
+terraform init
+terraform apply -var-file=variables.tfvars -auto-approve 
+```
 
 ## Role to access EKS Cluster
 ```bash

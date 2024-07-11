@@ -36,4 +36,11 @@ kube-prometheus-stack:
     admissionWebhooks:
       failurePolicy: Ignore
 
+  # grafana:
+  #   service:
+  #     type: LoadBalancer
+  #     annotations:
+  #       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+  #       service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
   ## additional configuration options available here: https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml

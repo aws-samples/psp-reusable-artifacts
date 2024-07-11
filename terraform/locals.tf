@@ -14,17 +14,20 @@ locals {
   private_subnets_pods  = var.privatesubnetids_pods
   public_subnets        = var.publicsubnetids
   azs                   = slice(data.aws_availability_zones.available.names, 0, 3)
+  git_private_ssh_key = var.ssh_key_path # Update with the git ssh key to be used by ArgoCD
 
   node_group_name = "managed-ondemand"
 
   crossplane_namespace = "crossplane-system"
   crossplane_sa        = "provider-aws"
 
+  gitops_addons_org      = var.gitops_addons_org
   gitops_addons_url      = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
   gitops_addons_basepath = var.gitops_addons_basepath
   gitops_addons_path     = var.gitops_addons_path
   gitops_addons_revision = var.gitops_addons_revision
 
+  gitops_workload_org      = var.gitops_workload_org
   gitops_workload_url      = "${var.gitops_workload_org}/${var.gitops_workload_repo}"
   gitops_workload_basepath = var.gitops_workload_basepath
   gitops_workload_path     = var.gitops_workload_path
@@ -87,11 +90,11 @@ locals {
 
   argocd_apps = {
     addons = file("../bootstrap/addons.yaml")
-    #workloads = file("${path.module}/bootstrap/workloads.yaml")
+    workloads = file("../bootstrap/workloads.yaml")
   }
 
   addons_metadata = merge(
-    # module.eks_blueprints_addons.gitops_metadata,
+     module.eks_blueprints_addons.gitops_metadata,
     {
       aws_cluster_name = local.name
       aws_region       = local.region
@@ -115,10 +118,6 @@ locals {
       workload_repo_revision = local.gitops_workload_revision
     }
   )
-  argocd_apps = {
-    addons    = file("../bootstrap/addons.yaml")
-    workloads = file("../bootstrap/workloads.yaml")
-  }
 
   tags = {
     Blueprint  = local.name

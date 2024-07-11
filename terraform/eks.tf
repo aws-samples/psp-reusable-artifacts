@@ -28,7 +28,7 @@ module "eks" {
     # to join nodes to the cluster (instead of /etc/eks/bootstrap.sh)
     al2023_nodeadm = {
       ami_type = "AL2023_x86_64_STANDARD"
-
+      instance_types  = ["m5.xlarge"]
       use_latest_ami_release_version = true
 
       cloudinit_pre_nodeadm = [

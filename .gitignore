@@ -397,3 +397,6 @@ terraform.rc
 
 .terraform.lock.hcl
 **/.terraform*/*
+terraform/versions.tf
+terraform/networking/versions.tf
+notes.txt

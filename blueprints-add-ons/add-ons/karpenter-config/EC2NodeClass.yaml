@@ -8,9 +8,9 @@ spec:
   role: {{ .Values.role }}
   securityGroupSelectorTerms:
   - tags:
-      karpenter.sh/discovery: {{ .Values.cluster-name }}
+      karpenter.sh/discovery: {{ .Values.clustername }}
   subnetSelectorTerms:
   - tags:
-      karpenter.sh/discovery: {{ .Values.cluster-name }}
+      karpenter.sh/discovery: {{ .Values.clustername }}
   tags:
     managed-by: karpenter
