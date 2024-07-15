@@ -11,14 +11,19 @@
 1. [Troubleshooting](#troubleshooting)
 1. [How to destroy infrastructure](#how-to-destroy)
 
-## Pre-reqs
+## Prerequisites
+
+Before you begin, make sure you have the following command line tools installed:
+- Git
+- Terraform 1.5.0 or above
+- AWS CLI 2.3.1 or above
+- jq 1.6 or above
+- Kubectl
+
+Also, for a full provisioning experience, we should have at least:
 - 2 AWS Accounts
     - Control Plane Account
-        - S3 bucket for Terraform backend
     - Data Plane Account
-- terraform 1.5.0
-- AWS CLI >= 2.3.1
-- jq 1.6
 
 ## Roles and Permissions
 Create PSP ControlPlane Execution Role. This role is your Platform Master Execution role. It will requires the following permissions to provision your control plane:
@@ -51,7 +56,7 @@ Ensure that you are using the correct role with the following command
 aws sts get-caller-identity
 ```
 
-By the end o this step, you should have a AWS CLI configured with a PSP-ControlPlane-Execution role. Please take note of this ARN.
+By the end o this step, you should have a AWS CLI configured with a PSP-ControlPlane-Execution role.
 
 
 ## S3 for TFState Persistance
@@ -59,8 +64,7 @@ Change your bucket name (must be unique) and AWS region
 ```bash
 aws s3api create-bucket --bucket $BUCKETNAME --region $AWSREGION
 ```
-Change bucket name and region inside terraform file 
-file: terraform/versions.tf
+Change bucket name and region inside file: terraform/versions.tf
 
 ```bash
 backend "s3" {
@@ -88,7 +92,7 @@ IF you don`t have Internet access (through Internet Gateway): VPC Endpoints
 - EKS
 - "ec2", "ec2messages", "elasticloadbalancing", "sts", "kms", "logs", "ssm", "ssmmessages"
 
-You can use networking folder of this repo to help provisioning networking infrastructure.
+You can use networking folder of this repo to help provisioning networking infrastructure (**please remember to change terraform/networking/versions.tf file to use your bucket as in previous step**).
 
 
 ## Environment Variables
@@ -96,18 +100,14 @@ You can use networking folder of this repo to help provisioning networking infra
 Replace the **variables.tfvars** file with the following content:
 
 - **controlplaneaccountid**: AWS Account ID where you want to deploy your PSP Control Plane cluster
-
 - **vpcid**: VPC ID where you want to deploy your PSP Control Plane cluster
-
-- **privatesubnetids_nodes**: Array of Subnet IDs where your EKS Nodes will have the primary interface (outside VPC communication). It is recommended to be on at least 3 different AZs.
-
-- **privatesubnetids_pods**: Array of Subnet IDs where VPC-CNI will allocate IPs for Pods. It is recommended to use CGNAT IPs of RFC6598 (100.64.0.0/10). It is recommended to be on at least 3 different AZs.
+- **privatesubnetids**: Array of Subnet IDs where your EKS Nodes will have the primary interface (outside VPC communication). It is recommended to be on at least 3 different AZs.
 - **publicsubnetids**: Array of Subnet IDs to be used by External Load Balancers. It is recommended to be on at least 3 different AZs.
 - **gitops_addons_org**: Your Git Organization URL for your Platform Addons (eg.: git@github.com:aws-samples)
-- **gitops_addons_repo**: Name of your Platform Addons repo (eg.: eks-blueprints-add-ons)
+- **gitops_addons_repo**: Name of your Platform Addons repo (eg.: psp-controlplane)
 - **gitops_addons_revision**: Git repository revision/branch/ref for your Platform Addons (eg.: main)
-- **gitops_workload_org**: Your Git Organization URL for your Platform Workloads (eg.: https://github.com/aws-samples)
-- **gitops_workload_repo**: Name of your Platform Workloads repo (eg.: eks-blueprints-add-ons)
+- **gitops_workload_org**: Your Git Organization URL for your Platform Workloads (eg.: git@github.com:aws-samples)
+- **gitops_workload_repo**: Name of your Platform Workloads repo (eg.: psp-controlplane)
 - **gitops_workload_revision**: Git repository revision/branch/ref for your Platform Workloads (eg.: main)
 
 OPTIONAL (if using AWS Identity Center integration)
@@ -128,26 +128,31 @@ export TF_VAR_gitops_workloads_repo=WORKLOADREPONAME
 export TF_VAR_gitops_workloads_revision=main
 ```
 
-## Terraform apply
+## Control Plane Creation
 ```bash
 cd psp-controlplane/terraform 
 terraform init
 terraform apply -var-file=variables.tfvars -auto-approve 
 ```
 
-## Role to access EKS Cluster
-```bash
-aws eks update-cluster-config --name psp-controlplane --access-config authenticationMode=API_AND_CONFIG_MAP
-```
+## Access to EKS Cluster
+
+By default the role used to create the cluster has complete access to EKS and Kubernetes APIs. If you need to give access to another user or role use the following commands:
 
 ```bash
-aws eks create-access-entry --cluster-name cluster-name --principal-arn arn:aws:iam::accountID:role/role-name --kubernetes-groups masters
+aws eks create-access-entry --cluster-name cluster-name --principal-arn arn:aws:iam::accountID:role/iam-principal-arn  --kubernetes-groups masters
 ```
 
 ```bash
 aws eks associate-access-policy --cluster-name cluster-name --principal-arn arn:aws:iam::accountID:role/iam-principal-arn --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy --access-scope type=cluster 
 ```
 
+
+## Destroy EKS Cluster
+```shell
+chmod 700 destroy.sh
+./destroy.sh
+```
 
 <!-- 3. Create Cluster Admin Role and Cluster Operator Role
     If you miss this configurations, start by Roles folder

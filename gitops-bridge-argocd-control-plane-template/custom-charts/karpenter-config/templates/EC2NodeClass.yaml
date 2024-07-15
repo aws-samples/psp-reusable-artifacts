@@ -1,0 +1,21 @@
+---
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: default
+spec:
+  amiFamily: AL2
+  role: {{ .Values.role }}
+  securityGroupSelectorTerms:
+  # - tags:
+  #     karpenter.sh/discovery: {{ .Values.clustername }}
+  - id: {{ .Values.securitygroupid }}
+  subnetSelectorTerms:
+  - id: {{ .Values.privatesubnetid1 }}
+  - id: {{ .Values.privatesubnetid2 }}
+  - id: {{ .Values.privatesubnetid3 }}
+  # - tags:
+  #     karpenter.sh/discovery: {{ .Values.clustername }}
+  # ADD 
+  tags:
+    managed-by: karpenter

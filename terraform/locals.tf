@@ -1,37 +1,33 @@
 locals {
-  #name            = basename(path.cwd)
-  name            = var.name
-  environment     = var.environment
-  region          = var.region
+  name        = var.name
+  environment = "prod"
+  region      = var.region
+
   cluster_version = var.kubernetes_version
+  vpc_id                = var.vpcid
+  private_subnets       = var.privatesubnetids
+  public_subnets        = var.publicsubnetids
+  azs                   = slice(data.aws_availability_zones.available.names, 0, 3)
+  git_private_ssh_key   = var.ssh_key_path
 
   cluster_endpoint_public_access  = true
   allowed_public_cidrs            = ["0.0.0.0/0"]
   cluster_endpoint_private_access = true
+#   vpc_cidr = var.vpc_cidr
 
-  vpc_id                = var.vpcid
-  private_subnets_nodes = var.privatesubnetids_nodes
-  private_subnets_pods  = var.privatesubnetids_pods
-  public_subnets        = var.publicsubnetids
-  azs                   = slice(data.aws_availability_zones.available.names, 0, 3)
-  git_private_ssh_key = var.ssh_key_path # Update with the git ssh key to be used by ArgoCD
-
-  node_group_name = "managed-ondemand"
-
-  crossplane_namespace = "crossplane-system"
-  crossplane_sa        = "provider-aws"
-
-  gitops_addons_org      = var.gitops_addons_org
   gitops_addons_url      = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
   gitops_addons_basepath = var.gitops_addons_basepath
   gitops_addons_path     = var.gitops_addons_path
   gitops_addons_revision = var.gitops_addons_revision
-
-  gitops_workload_org      = var.gitops_workload_org
-  gitops_workload_url      = "${var.gitops_workload_org}/${var.gitops_workload_repo}"
+  gitops_addons_org      = var.gitops_addons_org
+  gitops_workload_org    = var.gitops_workload_org
+  gitops_workload_repo   = var.gitops_workload_repo
+  gitops_workload_revision   = var.gitops_workload_revision
   gitops_workload_basepath = var.gitops_workload_basepath
   gitops_workload_path     = var.gitops_workload_path
-  gitops_workload_revision = var.gitops_workload_revision
+  gitops_workload_url      = "${local.gitops_workload_org}/${local.gitops_workload_repo}"
+  crossplane_namespace = "crossplane-system"
+  crossplane_sa        = "provider-aws"
 
   aws_addons = {
     enable_cert_manager                          = try(var.addons.enable_cert_manager, false)
@@ -59,6 +55,7 @@ locals {
     enable_ack_emrcontainers                     = try(var.addons.enable_ack_emrcontainers, false)
     enable_ack_sfn                               = try(var.addons.enable_ack_sfn, false)
     enable_ack_eventbridge                       = try(var.addons.enable_ack_eventbridge, false)
+    enable_aws_argocd_ingress                    = try(var.addons.enable_aws_argocd_ingress, false)
     enable_aws_crossplane_provider               = try(var.addons.enable_aws_crossplane_provider, false)
     enable_aws_crossplane_upbound_provider       = try(var.addons.enable_aws_crossplane_upbound_provider, false)
   }
@@ -71,6 +68,7 @@ locals {
     enable_gatekeeper                      = try(var.addons.enable_gatekeeper, false)
     enable_gpu_operator                    = try(var.addons.enable_gpu_operator, false)
     enable_ingress_nginx                   = try(var.addons.enable_ingress_nginx, false)
+    enable_keda                            = try(var.addons.enable_keda, false)
     enable_kyverno                         = try(var.addons.enable_kyverno, false)
     enable_kube_prometheus_stack           = try(var.addons.enable_kube_prometheus_stack, false)
     enable_metrics_server                  = try(var.addons.enable_metrics_server, false)
@@ -85,26 +83,21 @@ locals {
     local.aws_addons,
     local.oss_addons,
     { kubernetes_version = local.cluster_version },
-    { aws_cluster_name = local.name }
+    { aws_cluster_name = module.eks.cluster_name }
   )
 
-  argocd_apps = {
-    addons = file("../bootstrap/addons.yaml")
-    workloads = file("../bootstrap/workloads.yaml")
-  }
-
   addons_metadata = merge(
-     module.eks_blueprints_addons.gitops_metadata,
+    module.eks_blueprints_addons.gitops_metadata,
     {
-      aws_cluster_name = local.name
+      aws_cluster_name = module.eks.cluster_name
       aws_region       = local.region
       aws_account_id   = data.aws_caller_identity.current.account_id
       aws_vpc_id       = var.vpcid
     },
-    # {
-    #   aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
-    #   aws_upbound_crossplane_iam_role_arn = module.crossplane_irsa_aws.iam_role_arn
-    # },
+    {
+      # Required for external dns addon
+      external_dns_domain_filters = "example.com"
+    },
     {
       addons_repo_url      = local.gitops_addons_url
       addons_repo_basepath = local.gitops_addons_basepath
@@ -116,12 +109,25 @@ locals {
       workload_repo_basepath = local.gitops_workload_basepath
       workload_repo_path     = local.gitops_workload_path
       workload_repo_revision = local.gitops_workload_revision
+    },
+    {
+      karpenter_security_group_id      = module.eks.node_security_group_id
+      karpenter_private_subnet_id1     = local.private_subnets[0]
+      karpenter_private_subnet_id2     = local.private_subnets[1]
+      karpenter_private_subnet_id3     = local.private_subnets[2]
+    },
+    {
+      aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
+      aws_upbound_crossplane_iam_role_arn = module.crossplane_irsa_aws.iam_role_arn
     }
   )
 
+  argocd_apps = {
+    addons    = file("${path.module}/bootstrap/addons.yaml")
+    workloads = file("${path.module}/bootstrap/workloads.yaml")
+  }
+
   tags = {
     Blueprint  = local.name
-    GithubRepo = "github.com/JOAMELO-ORG/psp-controlplane"
-    project    = "psp-controlplane"
   }
 }

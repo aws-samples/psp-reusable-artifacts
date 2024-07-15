@@ -1,0 +1,24 @@
+{{- if and .Values.global.enabled_aws_upbound .Values.provider.enabled }}
+{{- with .Values.provider }}
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: upbound-provider-family-aws
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    {{- range $key, $value := .metadata.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+
+  {{- if .metadata.labels }}
+  labels:
+    {{- range $key, $value := .metadata.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  package: {{ .package.registry }}/provider-family-aws:{{ .package.version }}
+
+
+{{- end }}
+{{- end }}
