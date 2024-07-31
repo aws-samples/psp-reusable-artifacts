@@ -555,7 +555,7 @@ spec:
                 kind: ConfigMap
                 metadata:
                   name: aws-auth
-                  namespace: kube-system 
+                  namespace: kube-system
         patches:
           - fromFieldPath: spec.id
             toFieldPath: spec.providerConfigRef.name
@@ -625,7 +625,7 @@ spec:
 ### END OIDC Provider
 
 
-### 
+###
 # ALB Controller Role
       - name: iamrole-albcontroller
         base:
@@ -1611,7 +1611,7 @@ spec:
                 repository: https://argoproj.github.io/argo-helm
                 version: 5.45.0
                 url: ""
-              set: [] 
+              set: []
               values: {}
               namespace: argocd
             rollbackLimit: 3

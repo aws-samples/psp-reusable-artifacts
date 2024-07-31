@@ -1,5 +1,0 @@
-aws-cloudwatch-metrics:
-  serviceAccount:
-    create: false
-  tolerations: 
-    - operator: "Exists"

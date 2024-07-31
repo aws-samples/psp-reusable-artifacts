@@ -1,3 +1,0 @@
-tigera-operator:
-  installation:
-    kubernetesProvider: EKS

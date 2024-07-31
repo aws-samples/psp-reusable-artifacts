@@ -1,33 +1,33 @@
 locals {
   name        = var.name
-  environment = "prod"
+  environment = var.environment
   region      = var.region
 
-  cluster_version = var.kubernetes_version
+  cluster_version       = var.kubernetes_version
   vpc_id                = var.vpcid
-  private_subnets       = var.privatesubnetids
+  private_subnets_nodes = var.privatesubnetids_nodes
+  private_subnets_pods  = var.privatesubnetids_pods
   public_subnets        = var.publicsubnetids
   azs                   = slice(data.aws_availability_zones.available.names, 0, 3)
   git_private_ssh_key   = var.ssh_key_path
 
-  cluster_endpoint_public_access  = true
-  allowed_public_cidrs            = ["0.0.0.0/0"]
-  cluster_endpoint_private_access = true
-#   vpc_cidr = var.vpc_cidr
+  cluster_endpoint_public_access  = var.cluster_endpoint_public_access
+  allowed_public_cidrs            = var.allowed_public_cidrs
+  cluster_endpoint_private_access = var.cluster_endpoint_private_access
 
-  gitops_addons_url      = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
-  gitops_addons_basepath = var.gitops_addons_basepath
-  gitops_addons_path     = var.gitops_addons_path
-  gitops_addons_revision = var.gitops_addons_revision
-  gitops_addons_org      = var.gitops_addons_org
-  gitops_workload_org    = var.gitops_workload_org
-  gitops_workload_repo   = var.gitops_workload_repo
-  gitops_workload_revision   = var.gitops_workload_revision
+  gitops_addons_url        = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
+  gitops_addons_basepath   = var.gitops_addons_basepath
+  gitops_addons_path       = var.gitops_addons_path
+  gitops_addons_revision   = var.gitops_addons_revision
+  gitops_addons_org        = var.gitops_addons_org
+  gitops_workload_org      = var.gitops_workload_org
+  gitops_workload_repo     = var.gitops_workload_repo
+  gitops_workload_revision = var.gitops_workload_revision
   gitops_workload_basepath = var.gitops_workload_basepath
   gitops_workload_path     = var.gitops_workload_path
   gitops_workload_url      = "${local.gitops_workload_org}/${local.gitops_workload_repo}"
-  crossplane_namespace = "crossplane-system"
-  crossplane_sa        = "provider-aws"
+  crossplane_namespace     = var.crossplane_namespace
+  crossplane_sa            = var.crossplane_sa
 
   aws_addons = {
     enable_cert_manager                          = try(var.addons.enable_cert_manager, false)
@@ -111,10 +111,10 @@ locals {
       workload_repo_revision = local.gitops_workload_revision
     },
     {
-      karpenter_security_group_id      = module.eks.node_security_group_id
-      karpenter_private_subnet_id1     = local.private_subnets[0]
-      karpenter_private_subnet_id2     = local.private_subnets[1]
-      karpenter_private_subnet_id3     = local.private_subnets[2]
+      karpenter_security_group_id  = module.eks.node_security_group_id
+      karpenter_private_subnet_id1 = local.private_subnets_nodes[0]
+      karpenter_private_subnet_id2 = local.private_subnets_nodes[1]
+      karpenter_private_subnet_id3 = local.private_subnets_nodes[2]
     },
     {
       aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
@@ -128,6 +128,6 @@ locals {
   }
 
   tags = {
-    Blueprint  = local.name
+    Blueprint = local.name
   }
 }

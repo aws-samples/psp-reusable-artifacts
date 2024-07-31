@@ -27,3 +27,26 @@ output "access_grafana" {
     echo "Grafana URL: https://$(kubectl get svc -n kube-prometheus-stack kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
     EOT
 }
+
+# output "argocd_iam_role_arn" {
+#   description = "IAM Role for ArgoCD Cluster Hub, use to connect to spoke clusters"
+#   value       = module.argocd_irsa.iam_role_arn
+# }
+
+output "cluster_name" {
+  description = "Cluster controlplane name"
+  value       = module.eks.cluster_name
+}
+output "cluster_endpoint" {
+  description = "Cluster controlplane endpoint"
+  value       = module.eks.cluster_endpoint
+}
+output "cluster_certificate_authority_data" {
+  description = "Cluster controlplane certificate_authority_data"
+  value       = module.eks.cluster_certificate_authority_data
+  sensitive   = true
+}
+output "cluster_region" {
+  description = "Cluster controlplane region"
+  value       = local.region
+}

@@ -3,21 +3,25 @@ variable "name" {
   type        = string
   default     = "psp-controlplane"
 }
-# variable "vpc_cidr" {
-#   description = "VPC CIDR"
-#   type        = string
-#   default     = "10.0.0.0/16"
-# }
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "psp-controlplane"
+}
 variable "vpcid" {
   type      = string
   sensitive = true
 }
-variable "privatesubnetids" {
+variable "privatesubnetids_nodes" {
+  type = list(string)
+}
+variable "privatesubnetids_pods" {
   type = list(string)
 }
 variable "publicsubnetids" {
   type = list(string)
 }
+
 variable "region" {
   description = "AWS region"
   type        = string
@@ -57,7 +61,7 @@ variable "addons" {
     enable_prometheus_adapter                    = false
     enable_secrets_store_csi_driver              = true
     enable_vpa                                   = false
-    enable_aws_crossplane_upbound_provider       = true //esse deveria estar true
+    enable_aws_crossplane_upbound_provider       = true # esse deveria estar true
     enable_crossplane                            = true
     enable_aws_crossplane_provider               = false
     enable_crossplane_kubernetes_provider        = true  # installs kubernetes provider
@@ -109,15 +113,49 @@ variable "gitops_workload_revision" {
 variable "gitops_workload_basepath" {
   description = "Git repository base path for addons"
   type        = string
-  default     = "/"
+  default     = "crossplane-templates/"
 }
 variable "gitops_workload_path" {
   description = "Git repository path for addons"
   type        = string
-  default     = "crossplane-templates"
+  default     = ""
 }
 variable "ssh_key_path" {
   description = "SSH key path for git access"
   type        = string
   default     = "~/.ssh/id_rsa"
+}
+
+variable "cluster_endpoint_public_access" {
+  description = "EKS cluster endpoint public enabled"
+  type        = bool
+  default     = true
+}
+variable "allowed_public_cidrs" {
+  description = "EKS allowed public cidrs"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "cluster_endpoint_private_access" {
+  description = "EKS cluster endpoint private enabled"
+  type        = bool
+  default     = true
+}
+
+variable "crossplane_namespace" {
+  description = "kubernetes namespace for Crossplane System"
+  type        = string
+  default     = "crossplane-system"
+}
+variable "crossplane_sa" {
+  description = ""
+  type        = string
+  default     = "provider-aws"
+}
+
+variable "eks_role_admin" {
+  type        = string
+  description = "role ARN to add to EKS cluster as EKS Cluster Admin"
+  default     = "arn:aws:iam::999999999999:role/role-name"
 }

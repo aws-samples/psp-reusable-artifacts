@@ -1,3 +1,7 @@
+################################################################################
+# EKS Cluster
+################################################################################
+#tfsec:ignore:aws-eks-enable-control-plane-logging
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.14"
@@ -14,22 +18,21 @@ module "eks" {
   iam_role_name            = "${local.name}-cluster-role" # Backwards compat
   iam_role_use_name_prefix = false                        # Backwards compat
 
-  kms_key_aliases = [local.name] # Backwards compat
-
-  vpc_id     = local.vpc_id
-  subnet_ids = local.private_subnets_nodes
-
-  # create_cluster_security_group = false
-  # create_node_security_group    = false
+  vpc_id                        = local.vpc_id
+  subnet_ids                    = local.private_subnets_nodes
   create_cluster_security_group = true
   create_node_security_group    = true
+
+  #manage_aws_auth_configmap = true
+
   eks_managed_node_groups = {
     # AL2023 node group utilizing new user data format which utilizes nodeadm
     # to join nodes to the cluster (instead of /etc/eks/bootstrap.sh)
     al2023_nodeadm = {
       ami_type = "AL2023_x86_64_STANDARD"
-      instance_types  = ["m5.xlarge"]
+
       use_latest_ami_release_version = true
+      instance_types                 = ["c5a.large", "c6a.large", "c5.large", "c6i.large"]
 
       cloudinit_pre_nodeadm = [
         {
@@ -47,8 +50,8 @@ module "eks" {
           EOT
         }
       ]
-      min_size     = 2
-      max_size     = 3
+      min_size     = 3
+      max_size     = 5
       desired_size = 3
       selectors = [{
         namespace = "kube-system"
@@ -66,62 +69,14 @@ module "eks" {
     }
   }
 
-  # eks_managed_node_groups = {
-  #   managed = {
-  #     iam_role_name              = "${local.name}-managed" # Backwards compat
-  #     iam_role_use_name_prefix   = false                   # Backwards compat
-  #     use_custom_launch_template = false                   # Backwards compat
-
-  #     instance_types = ["c6a.large", "c5a.large", "c6i.large", "c5.large"]
-
-  #     min_size     = 2
-  #     max_size     = 3
-  #     desired_size = 2
-  #     selectors = [{
-  #       namespace = "kube-system"
-  #       labels = {
-  #         Which = "managed"
-  #       }
-  #       },
-  #       {
-  #         namespace = "karpenter"
-  #         labels = {
-  #           Which = "managed"
-  #         }
-  #       }
-  #     ]
-  #   }
-  # }
-  # #   manage_aws_auth_configmap = true
-  # #   aws_auth_roles = flatten(
-  # #     [
-  # #       module.operators_team.aws_auth_configmap_role,
-  # #       module.developers_team.aws_auth_configmap_role,
-  # #     ]
-  # #   )
-  # manage_aws_auth_configmap = true
-  # aws_auth_roles = flatten([
-  #   # {
-  #   #   rolearn  = "arn:aws:iam::787843526639:role/AWSReservedSSO_AWSAdministratorAccess_ba0ccc6c0012ab35"
-  #   #   username = "admin"
-  #   #   groups   = ["system:masters"]
-  #   # },
-  #   # module.operators_team.aws_auth_configmap_role,
-  #   # module.developers_team.aws_auth_configmap_role,
-  #   {
-  #     rolearn  = module.eks_blueprints_addons.karpenter.node_iam_role_arn
-  #     username = "system:node:{{EC2PrivateDNSName}}"
-  #     groups = [
-  #       "system:bootstrappers",
-  #       "system:nodes",
-  #     ]
-  #   }
-  # ])
-
   # EKS Addons
   cluster_addons = {
     coredns = {
       most_recent = true
+      timeouts = {
+        create = "25m"
+        delete = "10m"
+      }
     }
     kube-proxy = {
       most_recent = true
@@ -132,4 +87,59 @@ module "eks" {
   }
 
   tags = local.tags
+
+  # # EKS Addons
+  # cluster_addons = {
+  #   vpc-cni = {
+  #     # Specify the VPC CNI addon should be deployed before compute to ensure
+  #     # the addon is configured before data plane compute resources are created
+  #     # See README for further details
+  #     before_compute = true
+  #     most_recent    = true # To ensure access to the latest settings provided
+  #     configuration_values = jsonencode({
+  #       env = {
+  #         # Reference docs https://docs.aws.amazon.com/eks/latest/userguide/cni-increase-ip-addresses.html
+  #         ENABLE_PREFIX_DELEGATION = "true"
+  #         WARM_PREFIX_TARGET       = "1"
+  #       }
+  #     })
+  #   }
+  #   aws-ebs-csi-driver = {
+  #     most_recent              = true
+  #     service_account_role_arn = module.ebs_csi_driver_irsa.iam_role_arn
+  #   }
+  #   coredns = {
+  #     most_recent = true
+
+  #     timeouts = {
+  #       create = "25m"
+  #       delete = "10m"
+  #     }
+  #   }
+  #   kube-proxy = {}
+  #   /* adot needs to be installed after cert-manager is installed with gitops, uncomment once cluster addons are deployed
+  #   adot = {
+  #     most_recent              = true
+  #     service_account_role_arn = module.adot_irsa.iam_role_arn
+  #   }
+  #   */
+  #   # aws-guardduty-agent = {}
+  # }
+
+  access_entries = {
+    # One access entry with a policy associated
+    cluster-admin = {
+      kubernetes_groups = []
+      principal_arn     = var.eks_role_admin
+
+      policy_associations = {
+        cluster-admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 }

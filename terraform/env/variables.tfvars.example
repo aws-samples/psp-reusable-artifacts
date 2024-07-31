@@ -1,0 +1,23 @@
+controlplaneaccountid = "999999999999"
+managementaccountid   = "999999999999"
+
+name        = "controlplane-name"
+environment = "controlplane-env"
+
+region                   = "us-east-1"
+kubernetes_version       = "1.28"
+vpcid                    = "vpc_id"
+privatesubnetids_nodes   = ["nodesubnet_id1", "nodesubnet_id2", "nodesubnet_id3"]
+privatesubnetids_pods    = ["podsubnet_id1", "podsubnet_id2", "podsubnet_id3"]
+publicsubnetids          = ["publicsubnet_id1", "publicsubnet_id2", "publicsubnet_id3"]
+gitops_addons_org        = "git@github.com:ORG-NAME"
+gitops_addons_repo       = "psp-controlplane"
+gitops_addons_revision   = "main"
+gitops_workload_org      = "git@github.com:ORG-NAME"
+gitops_workload_repo     = "psp-controlplane"
+gitops_workload_revision = "main"
+ssh_key_path             = "~/.ssh/id_rsa"
+
+#Networking values
+vpc_cidr           = "10.0.0.0/16"
+vpc_secondary_cidr = ["100.64.0.0/16"]

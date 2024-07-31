@@ -24,4 +24,3 @@ spec:
     name: {{ $.Values.deploymentRuntimeConfig.metadata.name }}
 {{- end }}
 {{- end }}
-

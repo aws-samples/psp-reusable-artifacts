@@ -49,5 +49,3 @@ Selector labels
 app.kubernetes.io/name: {{ include "resources.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-
-

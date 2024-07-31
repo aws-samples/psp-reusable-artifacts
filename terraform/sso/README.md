@@ -30,11 +30,11 @@
 Tag your subnets with: karpenter-discovery = $cluster-name
 
 
-### For Automation use case 
+### For Automation use case
 ```mv /github ./github```
 
 
-Permission to be added in PSP ControlPlane Execution Role 
+Permission to be added in PSP ControlPlane Execution Role
 ```
 {
     "Version": "2012-10-17",

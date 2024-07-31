@@ -16,6 +16,6 @@ spec:
   - id: {{ .Values.privatesubnetid3 }}
   # - tags:
   #     karpenter.sh/discovery: {{ .Values.clustername }}
-  # ADD 
+  # ADD
   tags:
     managed-by: karpenter

@@ -1,5 +1,0 @@
-metrics-server:
-  replicas: 3
-  podDisruptionBudget:
-    enabled: true
-    maxUnavailable: 1

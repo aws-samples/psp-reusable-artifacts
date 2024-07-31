@@ -16,9 +16,9 @@ terraform {
     }
   }
 
-  backend "s3" {
-      bucket = "psp-controlplane-remotestate-aws-ia"
-      key    = "controlplane/tfstate/psp-networking.tfstate"
-      region = "us-east-1"
-  }
+  #   backend "s3" {
+  #     bucket = "BUCKETNAME"
+  #     key    = "controlplane/tfstate/psp-networking.tfstate"
+  #     region = "REGION"
+  #   }
 }
