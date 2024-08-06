@@ -16,8 +16,8 @@ terraform {
     }
   }
   backend "s3" {
-     bucket = "BUCKETNAME"
-     key    = "controlplane/tfstate/psp-controlplane.tfstate"
-     region = "REGION"
- }
+    bucket = "BUCKETNAME"
+    key    = "controlplane/tfstate/psp-controlplane.tfstate"
+    region = "REGION"
+  }
 }

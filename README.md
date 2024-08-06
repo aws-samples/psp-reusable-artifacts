@@ -2,14 +2,20 @@
 
 ## Table of Contents
 
-1. [How to deploy Infrastructure and Besu cluster](#how-to-deploy)
-1. [Ingress Services](#ingress-services)
-1. [Configuring Index Pattern in Kibana](#configuring-index-pattern-in-kibana)
-1. [Testing Cluster Besu](#testing-cluster-besu)
-1. [Stop and Start Besu Services](#stop-and-start-besu)
-1. [Installing Sirato - Optional](#installing-sirato---optional)
-1. [Troubleshooting](#troubleshooting)
-1. [How to destroy infrastructure](#how-to-destroy)
+- [AWS - PSP Platform Egineering - Pilot](#aws---psp-platform-egineering---pilot)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+    - [Roles and Permissions](#roles-and-permissions)
+    - [S3 for TFState Persistance](#s3-for-tfstate-persistance)
+    - [SSH Key](#ssh-key)
+  - [Networking](#networking)
+  - [Environment Variables](#environment-variables)
+  - [Control Plane Creation](#control-plane-creation)
+  - [Access to EKS Cluster](#access-to-eks-cluster)
+  - [Destroy EKS Cluster](#destroy-eks-cluster)
+  - [Troubleshooting session](#troubleshooting-session)
+  - [Security](#security)
+  - [License](#license)
 
 ## Prerequisites
 
@@ -25,8 +31,8 @@ Before you begin, make sure you have the following command line tools installed:
 Also, for a full provisioning experience, we should have at least:
 
 - 2 AWS Accounts
-    - Control Plane Account
-    - Data Plane Account
+  - Control Plane Account
+  - Data Plane Account
 
 ### Roles and Permissions
 
@@ -83,10 +89,10 @@ ssh-keygen -t ecdsa -f privatekey_name.pem
 You must have a VPC configured with:
 
 - 3 Private for Nodes
-    - Tag Subnets with kubernetes.io/role/internal-elb = 1
+  - Tag Subnets with kubernetes.io/role/internal-elb = 1
 - 3 Private Subnets for Pods (RFC6598): to use Custom Networking achieving higher scalability
 - 3 Public Subnets: to host Load Balancers
-    - Tag Subnets with kubernetes.io/role/elb = 1
+  - Tag Subnets with kubernetes.io/role/elb = 1
 
 IF you don`t have Internet access (through Internet Gateway): VPC Endpoints
 
@@ -177,7 +183,6 @@ GitHubAction-AssumeRoleWithAction
 -EC2 FullAdmin
 -VPC FullAdmin
 
-
 ### Create Control Plane Role in the Control Plane Account with the following permission
 GitHubAction-AssumeRoleWithAction
 -EKS FullAdmin
@@ -189,10 +194,10 @@ GitHubAction-AssumeRoleWithAction
 ## Troubleshooting session
 
 - If after full creation of the environment via terraform the ArgoCD service is still as ClusterIP, please check:
-    - Check the SSH key with right permissons to the repositories
-    - Repository URLs
-    - Repository branches
-    - Directory path on variable file or tfvar file
+  - Check the SSH key with right permissons to the repositories
+  - Repository URLs
+  - Repository branches
+  - Directory path on variable file or tfvar file
 - Check container logs
 - Check if repository URI is in correct form `git@github.com:ORG-NAME`
 
@@ -232,3 +237,11 @@ Check on argocd server if they have conectivity and permissions to clone the rep
 kubectl -n argocd exec --stdin --tty argo-cd-argocd-server-6c6b95b77f-2b65c -- /bin/bash
 git clone git@github.com:ORG-NAME/repository-name
 ```
+
+## Security
+
+See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+
+## License
+
+This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file.
