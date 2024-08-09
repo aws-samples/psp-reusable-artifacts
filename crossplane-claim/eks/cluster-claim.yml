@@ -1,0 +1,42 @@
+apiVersion: eks.anycompany.com/v1alpha1
+kind: XCluany
+metadata:
+  name: cluster-x
+spec:
+  id: cluster-x
+  parameters:
+    region: us-east-1
+    version: "1.30"
+    nodeSize: large
+    minNodeCount: 4
+    addonsRepoBasepath: "gitops-bridge-argocd-control-plane-template/"
+    addonsRepoPath: "bootstrap/control-plane/addons"
+    addonsRepoRevision: "complete-crossplane-examples"
+    addonsRepoUrl: "git@github.com:ORG-NAME/psp-controlplane"
+    awsAccountID: "999999999999"
+    sshPrivateKey: "YOUR SSHKEY USING BASE64 ENCONDING"
+    sshGitUrl: "YOUR addonsRepoUrl USING BASE64 ENCONDING"
+    vpc:
+      vpcID: VPCID
+      subnets-private-id:
+      - SUBNETIDZONA-A
+      - SUBNETIDZONA-B
+    namespaces:
+    - "crossplane"
+    apps:
+      argocd:
+        enabled: "true"
+      loadBalancerController:
+        enabled: "true"
+      karpenter:
+        enabled: "true"
+      metricsServer:
+        enabled: "true"
+      crossplaneUpboundProvider:
+        enabled: "true"
+      crossplaneKubernetesProvider:
+        enabled: "true"
+      crossplaneHelmProvider:
+        enabled: "true"
+      kubePrometheusStack:
+        enabled: "true"

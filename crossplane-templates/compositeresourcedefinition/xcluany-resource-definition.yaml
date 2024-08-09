@@ -50,6 +50,51 @@ spec:
                     description: The minimum number of nodes.
                     type: integer
                     default: 2
+                  addonsRepoBasepath:
+                    description: The git addons basepath
+                    type: string
+                  addonsRepoPath:
+                    description: The git addons repo path
+                    type: string
+                  addonsRepoRevision:
+                    description: The git addons repo revision
+                    type: string
+                  addonsRepoUrl: 
+                    description: The git addons repo url
+                    type: string
+                  awsAccountID:
+                    description: The AWS Account ID
+                    type: string
+                  environment:
+                    description: Environment
+                    type: string
+                    default: prod
+                  secretType:
+                    description: secret type label argocd
+                    type: string
+                    deafult: cluster
+                  sshPrivateKey:
+                    description: ssh private key
+                    type: string
+                  sshGitUrl:
+                    description: private git url
+                    type: string
+                  sshGitType:
+                    description: Secret ssh type
+                    type: string
+                    default: Z2l0
+                  karpenterDetails:
+                    description: Name of karpenter namespace and service account to pass to argocd secret
+                    type: string
+                    default: karpenter
+                  awsALBnamespace:
+                    description: Namespace for aws load balancer controller
+                    type: string
+                    default: kube-system
+                  awsALBserviceAccount:
+                    description: Service account for aws load balancer controller
+                    type: string
+                    default: aws-load-balancer-controller-sa
                   vpc:
                     type: object
                     description: Network resources for the cluster.
@@ -73,14 +118,6 @@ spec:
                     default:
                       - dev
                       - production
-                  iam:
-                    type: object
-                    description: List of IAM permissions
-                    properties:
-                      roleArnAdmin:
-                        description: Cluster Group Admin
-                        type: string
-                        default: "arn:aws:iam::787843526639:role/AWSReservedSSO_EKSClusterAdmin_b2a81c854dd698ec"
                   apps:
                     type: object
                     description: List of apps that should be installed in the cluster
@@ -90,15 +127,85 @@ spec:
                         description: Install Crossplane
                         properties:
                           enabled:
-                            type: boolean
-                            default: false
+                            type: string
+                            default: "false"
                       argocd:
                         type: object
                         description: Install Argocd
                         properties:
                           enabled:
-                            type: boolean
-                            default: false
+                            type: string
+                            default: "false"
+                      loadBalancerController:
+                        type: object
+                        description: Install AWS Load Balancer Controller
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      karpenter:
+                        type: object
+                        description: Install Karpenter
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      metricsServer:
+                        type: object
+                        description: Install Metrics Server
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      crossplaneUpboundProvider:
+                        type: object
+                        description: Install Upbound Provider for Crossplane
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      crossplaneKubernetesProvider:
+                        type: object
+                        description: Install Kubernetes Provider for Crossplane
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      crossplaneHelmProvider:
+                        type: object
+                        description: Install Helm Provider for Crossplane
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      kubePrometheusStack:
+                        type: object
+                        description: Install Prometheus Stack
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      ebsCsiResources:
+                        type: object
+                        description: Install EBS CSI Resources
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      secretsStore:
+                        type: object
+                        description: Install Secrets Store CSI Driver
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
+                      gateKeeper:
+                        type: object
+                        description: Install GateKeeper
+                        properties:
+                          enabled:
+                            type: string
+                            default: "false"
                 required:
                 - region
                 - version
