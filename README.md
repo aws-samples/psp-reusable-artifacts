@@ -1,8 +1,6 @@
-# ![PSP Reusable Artifacts](./img/image01.png)
-
 # PSP Reusable Artifacts
 
-## Coming Soon
+## ![PSP Reusable Artifacts](./img/image02.png)
 
 ## Security
 
