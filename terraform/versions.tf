@@ -15,6 +15,7 @@ terraform {
       version = ">= 1.14"
     }
   }
+  
   backend "s3" {
     bucket = "BUCKETNAME"
     key    = "controlplane/tfstate/psp-controlplane.tfstate"

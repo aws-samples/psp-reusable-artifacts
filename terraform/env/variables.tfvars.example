@@ -1,5 +1,6 @@
 controlplaneaccountid = "999999999999"
 managementaccountid   = "999999999999"
+eks_role_admin = "arn:aws:iam::999999999999:role/ADMIN_CLUSTEROPERATOR_ROLE" 
 
 name        = "controlplane-name"
 environment = "controlplane-env"
@@ -16,7 +17,7 @@ gitops_addons_revision   = "main"
 gitops_workload_org      = "git@github.com:ORG-NAME"
 gitops_workload_repo     = "psp-controlplane"
 gitops_workload_revision = "main"
-ssh_key_path             = "~/.ssh/id_rsa"
+ssh_key_path             = "~/.ssh/privatekey_name.pem"
 
 #Networking values
 vpc_cidr           = "10.0.0.0/16"
