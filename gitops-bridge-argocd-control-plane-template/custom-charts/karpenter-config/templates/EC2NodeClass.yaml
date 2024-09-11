@@ -4,7 +4,7 @@ kind: EC2NodeClass
 metadata:
   name: default
 spec:
-  amiFamily: AL2
+  amiFamily: {{ .Values.amiFamily }}
   role: {{ .Values.role }}
   securityGroupSelectorTerms:
   # - tags:
