@@ -115,6 +115,7 @@ locals {
       karpenter_private_subnet_id1 = local.private_subnets_nodes[0]
       karpenter_private_subnet_id2 = local.private_subnets_nodes[1]
       karpenter_private_subnet_id3 = local.private_subnets_nodes[2]
+      karpenter_namespace          = "kube-system"
     },
     {
       aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
