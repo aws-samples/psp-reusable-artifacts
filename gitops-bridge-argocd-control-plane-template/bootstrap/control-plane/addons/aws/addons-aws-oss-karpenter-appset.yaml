@@ -15,7 +15,7 @@
                   addonChart: karpenter
                   addonChartReleaseName: karpenter
                   addonChartRepositoryNamespace: karpenter
-                  addonChartVersion: 0.36.5
+                  addonChartVersion: 0.36.4
                   # using oci repostory already configure in argocd
                   # argocd repo add public.ecr.aws --type helm --name aws-public-ecr --enable-oci
                   addonChartRepository: public.ecr.aws
@@ -32,13 +32,13 @@
                   matchLabels:
                     environment: staging
                 values:
-                  addonChartVersion: 0.36.5
+                  addonChartVersion: 0.36.4
             - clusters:
                 selector:
                   matchLabels:
                     environment: prod
                 values:
-                  addonChartVersion: 0.36.5
+                  addonChartVersion: 0.36.4
     template:
       metadata:
         name: addon-{{name}}-{{values.addonChart}}
