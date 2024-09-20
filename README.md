@@ -1,5 +1,20 @@
 # AWS - PSP Platform Egineering
 
+This repository contains reusable artifacts and templates to support the AWS Platform Strategy Program (PSP). The PSP is a no-cost program that provides guidance to customers on building internal developer platforms (IDP) on AWS.
+
+The goal of this repository is to provide a set of verified, production-ready artifacts that customers can leverage when implementing an IDP as part of the PSP engagement. This includes:
+
+- Terraform templates for provisioning the control plane infrastructure, including an EKS cluster, GitOps tooling, and supporting resources
+- Crossplane compositions and claims for provisioning data plane EKS clusters in a self-service manner
+- GitOps templates and configurations for deploying common platform addons and workloads
+- Configuration files, scripts, and other utilities to streamline the PSP implementation process
+
+By providing these reusable artifacts, the repository aims to accelerate the delivery of IDP solutions for PSP customers. The artifacts have been battle-tested through numerous customer engagements, ensuring they represent proven, scalable patterns.
+
+You can leverage this repository as a starting point for building their own platform, customizing the templates and configurations to fit their specific requirements. This helps reduce the time and effort needed to set up the core IDP components, allowing the teams to focus on delivering value to their end users.
+
+The repository is maintained by the AWS Solutions Architecture team and contributions are welcome from the broader AWS and customer community. It serves as a crucial part of the overall PSP offering, empowering customers to quickly realize the benefits of an AWS-powered internal developer platform.
+
 ## Table of Contents
 
 - [AWS - PSP Platform Egineering](#aws---psp-platform-egineering)
@@ -31,25 +46,25 @@ Before you begin, make sure you have the following command line tools installed:
 
 ## SSH Key
 
-We'll need to create or use an ssh key to give ArgoCD the right to access the `gitops_addons` and `gitops_workload` repositories.
+You'll need to create or use an SSH key to give ArgoCD the necessary access to the `gitops_addons` and `gitops_workload` repositories. Run the following command to generate a new SSH key:
 
 ```bash
 ssh-keygen -t ecdsa -f ~/.ssh/privatekey_name.pem
 ```
 
-You must [register your public SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) previously generated on your Github account.
+After generating the key, [register your public SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) on your GitHub account.
 
 ## S3 for TFState Persistance
 
-All your tfstate files should be securely stored on S3 bucket. To configure that run the following comands to create your bucket and then update your versions.tf files on each terraform folder that is required.
+All your Terraform state files should be securely stored in an S3 bucket. To configure this, run the following commands to create your bucket, then update the versions.tf files in each Terraform folder that requires it.
 
-Change your bucket name (must be unique) and AWS region
+Change the $BUCKETNAME and $AWSREGION variables to your desired values:
 
 ```bash
 aws s3api create-bucket --bucket $BUCKETNAME --region $AWSREGION
 ```
 
-At each versions.tf file, you should change the following code replacing your bucket name and AWS region.
+In each versions.tf file, update the backend "s3" block with your bucket name and AWS region:
 
 ```json
 backend "s3" {
@@ -59,23 +74,19 @@ backend "s3" {
    }
 ```
 
-This ensure that your TFState files will be securely stored in Amazon S3 bucket.
+This ensures that your Terraform state files will be securely stored in an Amazon S3 bucket.
 
 ## Roles and Permissions
 
-Create PSP ControlPlane Execution Role. This role is your Platform Master Execution role. Follow the instructions of the following readme to create role and policies.
-
-[Roles and permissions readme](terraform/platform-execution-role/README.md)
+Create a PSP Control Plane Execution Role. This is your Platform Master Execution role. Follow the instructions in the [Roles and permissions readme](terraform/platform-execution-role/README.md)
 
 ## Networking
 
-Create PSP Control Plane Networking environment. Follow the instructions of the following readme to create role and policies.
-
-[Networking](terraform/networking/README.md)
+Create the PSP Control Plane Networking environment. Follow the instructions in the [Networking](terraform/networking/README.md)
 
 ## GitOps Variables
 
-In platform engineering we use GitOps to ensure that our Control Plane addons and applications are managed by a central Git repository.
+In platform engineering, we use GitOps to ensure that our Control Plane addons and applications are managed by a central Git repository.
 
 We use [EKS Blueprints for Terraform](https://github.com/aws-ia/terraform-aws-eks-blueprints) for an EKS cluster for Control Plane, and through [GitOps Bridge project](https://github.com/gitops-bridge-dev/gitops-bridge/) we sent metadata and configurations to be used by [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) to reconcile Kubernetes Helm charts for Addons/Plugins and Crossplane definitions/compositions.
 
