@@ -6,9 +6,9 @@ data "terraform_remote_state" "platform-execution-role" {
 
   backend = "s3"
   config = {
-      bucket = "BUCKETNAME"
-      key    = "controlplane/tfstate/platform-execution-role.tfstate"
-      region = "REGION"
+    bucket = "BUCKETNAME"
+    key    = "controlplane/tfstate/platform-execution-role.tfstate"
+    region = "REGION"
   }
 }
 
@@ -18,4 +18,3 @@ data "terraform_remote_state" "platform-execution-role" {
 #     path = "${path.module}/../codecommit/terraform.tfstate"
 #   }
 # }
-  

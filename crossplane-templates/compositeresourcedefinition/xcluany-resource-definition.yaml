@@ -59,7 +59,7 @@ spec:
                   addonsRepoRevision:
                     description: The git addons repo revision
                     type: string
-                  addonsRepoUrl: 
+                  addonsRepoUrl:
                     description: The git addons repo url
                     type: string
                   awsAccountID:

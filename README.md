@@ -1,4 +1,4 @@
-# AWS - PSP Platform Egineering
+# AWS - PSP Platform Engineering
 
 This repository contains reusable artifacts and templates to support the AWS Platform Strategy Program (PSP). The PSP is a no-cost program that provides guidance to customers on building internal developer platforms (IDP) on AWS.
 
@@ -17,7 +17,8 @@ The repository is maintained by the AWS Solutions Architecture team and contribu
 
 ## Table of Contents
 
-- [AWS - PSP Platform Egineering](#aws---psp-platform-egineering)
+- [AWS - PSP Platform Engineering](#aws---psp-platform-engineering)
+  - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [SSH Key](#ssh-key)
   - [S3 for TFState Persistance](#s3-for-tfstate-persistance)
@@ -30,8 +31,8 @@ The repository is maintained by the AWS Solutions Architecture team and contribu
   - [Create new data plane clusters using Crossplane](#create-new-data-plane-clusters-using-crossplane)
   - [Destroy EKS Cluster](#destroy-eks-cluster)
   - [Troubleshooting](#troubleshooting)
-- [Security](#security)
-- [License](#license)
+  - [Security](#security)
+  - [License](#license)
 
 ## Prerequisites
 

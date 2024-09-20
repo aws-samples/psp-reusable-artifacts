@@ -1,6 +1,6 @@
-# PSP Platform Egineering - Role and Permissions
+# PSP Platform Engineering - Role and Permissions
 
-Create PSP ControlPlane Execution Role. This role is your Platform Master Execution role. It will requires the following permissions to provision your control plane:
+Create a PSP ControlPlane Execution Role. This role will serve as your Platform Master Execution role. It requires the following permissions to provision your control plane:
 
 - VPCFullAccess
 - EC2FUllAccess
@@ -19,10 +19,10 @@ Create PSP ControlPlane Execution Role. This role is your Platform Master Execut
 
 Rename and modify [variables.tfvars](../env/variables.tfvars.example) file adding ControlPlaneAccountID
 
-- controlplaneaccountid: This account will be your central account for your Control Plane cluster
-- eks_role_admin: This is an existing role that operators should use to access EKS cluster (it`s not the role created for Platform Execution, that will be the owner of the Control Plane cluster).
+- controlplaneaccountid: This account will be your central account for your Control Plane cluster.
+- eks_role_admin: This is an existing role that operators should use to access the EKS cluster. It is not the role created for Platform Execution, which will be the owner of the Control Plane cluster.
 
-> Don't forget to setup terraform state backend on version.tf file inside the platform-execution-role folder
+> Don't forget to set up the Terraform state backend in the version.tf file inside the platform-execution-role folder.
 
 ## How to run
 

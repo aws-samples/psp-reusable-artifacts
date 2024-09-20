@@ -1,6 +1,6 @@
-# PSP Platform Egineering - Networking
+# PSP Platform Engineering - Networking
 
-Create PSP ControlPlane Networkingn environment for your Control plane EKS cluster. Your VPC must have:
+Create PSP Control Plane Networking environment for your Control Plane EKS cluster. Your VPC must have:
 
 - 3 Private for Nodes
   - Tag Subnets with kubernetes.io/role/internal-elb = 1
@@ -8,7 +8,7 @@ Create PSP ControlPlane Networkingn environment for your Control plane EKS clust
 - 3 Public Subnets: to host Load Balancers
   - Tag Subnets with kubernetes.io/role/elb = 1
 
-If you don`t have Internet access (through Internet Gateway), you should also have VPC endpoints for:
+If you don't have internet access (through an Internet Gateway), you should also have VPC endpoints for:
 
 - S3 Gateway Endpoint
 - ECR.api
@@ -29,7 +29,7 @@ Add this variables `../env/terraform-file.tfvars`
 - **vpc_cidr**: VPC CIDR for Platform Control Plane Nodes IP
 - **vpc_secondary_cidr**: VPC CIDR for Platform Control Plane Pods IP
 - **region**: AWS region to be used for your Platform Control Plane
-- **name**: Prefix name for VPC 
+- **name**: Prefix name for VPC
 - **environment**: Environment tag for you VPC
 
 > Don't forget to setup terraform state backend on version.tf file first
@@ -42,11 +42,11 @@ terraform init
 terraform apply -auto-approve -var-file=../env/terraform-file.tfvars
 ```
 
-### Configure TFVars with Networking parameters
+### Configure TFVars with Networking Parameters
 
-Please use the Terraform final output to overwrite the following variables in the `../env/terraform-file.tfvars`:
+Use the Terraform final output to overwrite the following variables in the `../env/terraform-file.tfvars`\:
 
 - **vpcid**: VPC ID where you want to deploy your PSP Control Plane cluster
-- **privatesubnetids_nodes**: Array of Subnet IDs where your EKS Nodes will have the primary interface (outside VPC communication). It is recommended to be on at least 3 different AZs.
-- **privatesubnetids_pods**: Array of Subnet IDs to be used by EKS Pods. It is recommended to be on at least 3 different AZs.
-- **publicsubnetids**: Array of Subnet IDs to be used by External Load Balancers. It is recommended to be on at least 3 different AZs.
+- **privatesubnetids_nodes**: Array of Subnet IDs for your EKS Nodes' primary interface (outside VPC communication). Recommended to span at least 3 different Availability Zones (AZs).
+- **privatesubnetids_pods**: Array of Subnet IDs for EKS Pods. Recommended to span at least 3 different AZs.
+- **publicsubnetids**: Array of Subnet IDs for External Load Balancers. Recommended to span at least 3 different AZs.
