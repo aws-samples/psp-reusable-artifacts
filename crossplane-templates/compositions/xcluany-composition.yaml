@@ -568,7 +568,7 @@ spec:
             type: ToCompositeFieldPath
 ### END OIDC Provider
 
-### 
+###
 # ALB Controller Role
       - name: iamrole-albcontroller
         base:
@@ -1276,7 +1276,7 @@ spec:
         - fromFieldPath: spec.parameters.sshGitType
           toFieldPath: spec.forProvider.manifest.data.type
         - fromFieldPath: spec.parameters.sshGitUrl
-          toFieldPath: spec.forProvider.manifest.data.url                
+          toFieldPath: spec.forProvider.manifest.data.url
 
 
 ##END SSH SECRET
@@ -1313,11 +1313,11 @@ spec:
         - fromFieldPath: spec.parameters.awsALBserviceAccount
           toFieldPath: spec.forProvider.manifest.metadata.annotations.aws_load_balancer_controller_service_account
         - fromFieldPath: spec.parameters.karpenterDetails
-          toFieldPath: spec.forProvider.manifest.metadata.annotations.karpenter_service_account         
+          toFieldPath: spec.forProvider.manifest.metadata.annotations.karpenter_service_account
         - fromFieldPath: spec.parameters.addonsRepoBasepath
           toFieldPath: spec.forProvider.manifest.metadata.annotations.addons_repo_basepath
         - fromFieldPath: spec.parameters.vpc.vpcID
-          toFieldPath: spec.forProvider.manifest.metadata.annotations.aws_vpc_id        
+          toFieldPath: spec.forProvider.manifest.metadata.annotations.aws_vpc_id
         - fromFieldPath: spec.parameters.region
           toFieldPath: spec.forProvider.manifest.metadata.annotations.aws_region
         - fromFieldPath: spec.parameters.environment
@@ -1532,7 +1532,7 @@ spec:
                 repository: https://argoproj.github.io/argo-helm
                 version: 5.45.0
                 url: ""
-              set: [] 
+              set: []
               values: {}
               namespace: argocd
             rollbackLimit: 3

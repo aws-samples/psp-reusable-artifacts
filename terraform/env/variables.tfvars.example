@@ -1,6 +1,6 @@
 controlplaneaccountid = "999999999999"
 managementaccountid   = "999999999999"
-eks_role_admin = "arn:aws:iam::999999999999:role/ADMIN_CLUSTEROPERATOR_ROLE" 
+eks_role_admin = "arn:aws:iam::999999999999:role/ADMIN_CLUSTEROPERATOR_ROLE"
 
 name        = "controlplane-name"
 environment = "controlplane-env"
