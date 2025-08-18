@@ -1,4 +1,4 @@
-# AWS - PSP Platform Engineering
+# Platform Strategy Program (PSP) - Platform Engineering on AWS
 
 This repository contains reusable artifacts and templates to support the AWS Platform Strategy Program (PSP). The PSP is a no-cost program that provides guidance to customers on building internal developer platforms (IDP) on AWS.
 
@@ -17,7 +17,7 @@ The repository is maintained by the AWS Solutions Architecture team and contribu
 
 ## Table of Contents
 
-- [AWS - PSP Platform Engineering](#aws---psp-platform-engineering)
+- [Platform Strategy Program (PSP) - Platform Engineering on AWS](#platform-strategy-program-psp---platform-engineering-on-aws)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [SSH Key](#ssh-key)
