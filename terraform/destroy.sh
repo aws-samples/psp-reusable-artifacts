@@ -1,17 +1,17 @@
 #!/bin/bash
-
 set -x
 
-# Delete the Ingress/SVC before removing the addons
-TMPFILE=$(mktemp)
-terraform output -raw configure_kubectl > "$TMPFILE"
-source "$TMPFILE"
+TFVARS="./env/workshop.tfvars"
 
-kubectl delete svc -n argocd argo-cd-argocd-server
-kubectl delete svc -n kube-prometheus-stack kube-prometheus-stack-grafana
-kubectl delete svc -n kube-prometheus-stack kube-prometheus-stack-prometheus
+# Destroy addons IAM roles first, then clusters
+terraform destroy -target="module.crossplane_irsa_aws" -auto-approve -var-file=$TFVARS
+terraform destroy -target="module.eks_blueprints_addons_cluster1" -auto-approve -var-file=$TFVARS
+terraform destroy -target="module.eks_cluster1" -auto-approve -var-file=$TFVARS
+terraform destroy -target="module.eks_cluster2" -auto-approve -var-file=$TFVARS
+terraform destroy -target="module.eks_cluster3" -auto-approve -var-file=$TFVARS
+terraform destroy -auto-approve -var-file=$TFVARS
 
-terraform destroy -target="module.gitops_bridge_bootstrap" -auto-approve -var-file=./env/controlplane.tfvars
-terraform destroy -target="module.eks_blueprints_addons" -auto-approve -var-file=./env/controlplane.tfvars
-terraform destroy -target="module.eks" -auto-approve -var-file=./env/controlplane.tfvars
-terraform destroy -auto-approve -var-file=./env/controlplane.tfvars
+echo ""
+echo "EKS clusters destroyed. To also destroy networking and IAM role:"
+echo "  cd networking && terraform destroy -auto-approve"
+echo "  cd ../platform-execution-role && terraform destroy -auto-approve -var-file=../env/workshop.tfvars"

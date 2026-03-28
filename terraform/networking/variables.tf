@@ -1,14 +1,3 @@
-variable "vpc_cidr" {
-  description = "VPC CIDR"
-  type        = string
-  default     = "10.255.0.0/16"
-}
-variable "vpc_secondary_cidr" {
-  description = "VPC CIDR secundary RFC6598"
-  type        = list(string)
-  default     = ["100.64.0.0/16"]
-}
-
 variable "region" {
   description = "AWS region"
   type        = string
@@ -16,13 +5,13 @@ variable "region" {
 }
 
 variable "name" {
-  description = "Prefix name"
+  description = "Prefix name for resources"
   type        = string
-  default     = "psp-controlplane-vpc"
+  default     = "psp"
 }
 
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "control-plane"
+  default     = "workshop"
 }

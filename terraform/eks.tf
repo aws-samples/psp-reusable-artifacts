@@ -1,75 +1,31 @@
 ################################################################################
-# EKS Cluster
+# EKS Cluster 1 - Capabilities (Argo CD, kro, ACK)
 ################################################################################
-#tfsec:ignore:aws-eks-enable-control-plane-logging
-module "eks" {
+module "eks_cluster1" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.14"
+  version = "~> 20.31"
 
-  cluster_name                         = local.name
+  cluster_name                         = local.cluster1_name
   cluster_version                      = local.cluster_version
-  cluster_endpoint_public_access       = local.cluster_endpoint_public_access
-  cluster_endpoint_public_access_cidrs = local.allowed_public_cidrs
-  cluster_endpoint_private_access      = local.cluster_endpoint_private_access
-  cluster_enabled_log_types            = ["api", "audit", "authenticator", "controllerManager", "scheduler"] # Backwards compat
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_private_access      = true
+  cluster_endpoint_public_access_cidrs = var.allowed_public_cidrs
 
   enable_cluster_creator_admin_permissions = true
 
-  iam_role_name            = "${local.name}-cluster-role" # Backwards compat
-  iam_role_use_name_prefix = false                        # Backwards compat
+  iam_role_name            = "${local.cluster1_name}-cluster-role"
+  iam_role_use_name_prefix = false
 
-  vpc_id                        = local.vpc_id
-  subnet_ids                    = local.private_subnets_nodes
-  create_cluster_security_group = true
-  create_node_security_group    = true
+  vpc_id     = local.vpc_id_cluster1
+  subnet_ids = local.private_subnets_nodes_cluster1
 
-  #manage_aws_auth_configmap = true
-
-  eks_managed_node_groups = {
-    # AL2023 node group utilizing new user data format which utilizes nodeadm
-    # to join nodes to the cluster (instead of /etc/eks/bootstrap.sh)
-    al2023_nodeadm = {
-      ami_type = "AL2023_x86_64_STANDARD"
-
-      use_latest_ami_release_version = true
-      instance_types                 = ["c5a.large", "c6a.large", "c5.large", "c6i.large"]
-
-      cloudinit_pre_nodeadm = [
-        {
-          content_type = "application/node.eks.aws"
-          content      = <<-EOT
-            ---
-            apiVersion: node.eks.aws/v1alpha1
-            kind: NodeConfig
-            spec:
-              kubelet:
-                config:
-                  shutdownGracePeriod: 30s
-                  featureGates:
-                    DisableKubeletCloudCredentialProviders: true
-          EOT
-        }
-      ]
-      min_size     = 3
-      max_size     = 5
-      desired_size = 3
-      selectors = [{
-        namespace = "kube-system"
-        labels = {
-          Which = "managed"
-        }
-        },
-        {
-          namespace = "karpenter"
-          labels = {
-            Which = "managed"
-          }
-        }
-      ]
-    }
+  # EKS Auto Mode
+  cluster_compute_config = {
+    enabled    = true
+    node_pools = ["general-purpose", "system"]
+    node_role_arn = aws_iam_role.auto_mode_node_role_cluster1.arn
   }
 
-  # EKS Addons
   cluster_addons = {
     coredns = {
       most_recent = true
@@ -81,65 +37,255 @@ module "eks" {
     kube-proxy = {
       most_recent = true
     }
-    # Specify the VPC CNI addon outside of the module as shown below
-    # to ensure the addon is configured before compute resources are created
-    # See README for further details
+    vpc-cni = {
+      most_recent = true
+      before_compute = true
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION = "true"
+          WARM_PREFIX_TARGET       = "1"
+        }
+      })
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
   }
 
-  tags = local.tags
-
-  # # EKS Addons
-  # cluster_addons = {
-  #   vpc-cni = {
-  #     # Specify the VPC CNI addon should be deployed before compute to ensure
-  #     # the addon is configured before data plane compute resources are created
-  #     # See README for further details
-  #     before_compute = true
-  #     most_recent    = true # To ensure access to the latest settings provided
-  #     configuration_values = jsonencode({
-  #       env = {
-  #         # Reference docs https://docs.aws.amazon.com/eks/latest/userguide/cni-increase-ip-addresses.html
-  #         ENABLE_PREFIX_DELEGATION = "true"
-  #         WARM_PREFIX_TARGET       = "1"
-  #       }
-  #     })
-  #   }
-  #   aws-ebs-csi-driver = {
-  #     most_recent              = true
-  #     service_account_role_arn = module.ebs_csi_driver_irsa.iam_role_arn
-  #   }
-  #   coredns = {
-  #     most_recent = true
-
-  #     timeouts = {
-  #       create = "25m"
-  #       delete = "10m"
-  #     }
-  #   }
-  #   kube-proxy = {}
-  #   /* adot needs to be installed after cert-manager is installed with gitops, uncomment once cluster addons are deployed
-  #   adot = {
-  #     most_recent              = true
-  #     service_account_role_arn = module.adot_irsa.iam_role_arn
-  #   }
-  #   */
-  #   # aws-guardduty-agent = {}
-  # }
-
   access_entries = {
-    # One access entry with a policy associated
     cluster-admin = {
       kubernetes_groups = []
       principal_arn     = var.eks_role_admin
-
       policy_associations = {
         cluster-admin = {
           policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
+          access_scope = { type = "cluster" }
         }
       }
     }
   }
+
+  tags = local.tags
+}
+
+################################################################################
+# EKS Cluster 2 - CNOE DIY
+################################################################################
+module "eks_cluster2" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.31"
+
+  cluster_name                         = local.cluster2_name
+  cluster_version                      = local.cluster_version
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_private_access      = true
+  cluster_endpoint_public_access_cidrs = var.allowed_public_cidrs
+
+  enable_cluster_creator_admin_permissions = true
+
+  iam_role_name            = "${local.cluster2_name}-cluster-role"
+  iam_role_use_name_prefix = false
+
+  vpc_id     = local.vpc_id_cluster2
+  subnet_ids = local.private_subnets_nodes_cluster2
+
+  # EKS Auto Mode
+  cluster_compute_config = {
+    enabled    = true
+    node_pools = ["general-purpose", "system"]
+    node_role_arn = aws_iam_role.auto_mode_node_role_cluster2.arn
+  }
+
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+      timeouts = {
+        create = "25m"
+        delete = "10m"
+      }
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+      before_compute = true
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION = "true"
+          WARM_PREFIX_TARGET       = "1"
+        }
+      })
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
+  }
+
+  access_entries = {
+    cluster-admin = {
+      kubernetes_groups = []
+      principal_arn     = var.eks_role_admin
+      policy_associations = {
+        cluster-admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = { type = "cluster" }
+        }
+      }
+    }
+  }
+
+  tags = local.tags
+}
+
+################################################################################
+# EKS Cluster 3 - Apps Platform
+################################################################################
+module "eks_cluster3" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.31"
+
+  cluster_name                         = local.cluster3_name
+  cluster_version                      = local.cluster_version
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_private_access      = true
+  cluster_endpoint_public_access_cidrs = var.allowed_public_cidrs
+
+  enable_cluster_creator_admin_permissions = true
+
+  iam_role_name            = "${local.cluster3_name}-cluster-role"
+  iam_role_use_name_prefix = false
+
+  vpc_id     = local.vpc_id_cluster3
+  subnet_ids = local.private_subnets_nodes_cluster3
+
+  # EKS Auto Mode
+  cluster_compute_config = {
+    enabled    = true
+    node_pools = ["general-purpose", "system"]
+    node_role_arn = aws_iam_role.auto_mode_node_role_cluster3.arn
+  }
+
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+      timeouts = {
+        create = "25m"
+        delete = "10m"
+      }
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+      before_compute = true
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION = "true"
+          WARM_PREFIX_TARGET       = "1"
+        }
+      })
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
+  }
+
+  access_entries = {
+    cluster-admin = {
+      kubernetes_groups = []
+      principal_arn     = var.eks_role_admin
+      policy_associations = {
+        cluster-admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = { type = "cluster" }
+        }
+      }
+    }
+  }
+
+  tags = local.tags
+}
+
+################################################################################
+# EKS Auto Mode Node IAM Roles
+# Auto Mode requires a node role with specific managed policies
+################################################################################
+resource "aws_iam_role" "auto_mode_node_role_cluster1" {
+  name = "${local.cluster1_name}-auto-mode-node"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role" "auto_mode_node_role_cluster2" {
+  name = "${local.cluster2_name}-auto-mode-node"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role" "auto_mode_node_role_cluster3" {
+  name = "${local.cluster3_name}-auto-mode-node"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+
+  tags = local.tags
+}
+
+# Attach required managed policies to all node roles
+locals {
+  auto_mode_node_policies = [
+    "arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy",
+    "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly",
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+  ]
+
+  node_roles = {
+    cluster1 = aws_iam_role.auto_mode_node_role_cluster1.name
+    cluster2 = aws_iam_role.auto_mode_node_role_cluster2.name
+    cluster3 = aws_iam_role.auto_mode_node_role_cluster3.name
+  }
+
+  # Flatten for for_each
+  node_role_policy_attachments = flatten([
+    for cluster, role_name in local.node_roles : [
+      for policy in local.auto_mode_node_policies : {
+        key       = "${cluster}-${basename(policy)}"
+        role_name = role_name
+        policy    = policy
+      }
+    ]
+  ])
+}
+
+resource "aws_iam_role_policy_attachment" "auto_mode_node_policies" {
+  for_each   = { for item in local.node_role_policy_attachments : item.key => item }
+  role       = each.value.role_name
+  policy_arn = each.value.policy
 }

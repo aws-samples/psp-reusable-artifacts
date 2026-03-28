@@ -1,0 +1,8 @@
+controlplaneaccountid = "999999999999"
+eks_role_admin        = "arn:aws:iam::999999999999:role/ADMIN_ROLE"
+
+name        = "psp"
+environment = "workshop"
+
+region             = "us-east-1"
+kubernetes_version = "1.35"

@@ -1,65 +1,78 @@
-
-output "vpc_id" {
-  description = "The ID of the VPC"
-  value       = module.vpc.vpc_id
+# Cluster 1 - Capabilities
+output "vpc_id_cluster1" {
+  description = "VPC ID for Cluster 1 (Capabilities)"
+  value       = module.vpc_cluster1.vpc_id
 }
 
-output "vpc_arn" {
-  description = "The ARN of the VPC"
-  value       = module.vpc.vpc_arn
+output "private_subnets_nodes_cluster1" {
+  description = "Private subnet IDs for nodes - Cluster 1"
+  value       = slice(module.vpc_cluster1.private_subnets, 0, 3)
 }
 
-output "vpc_cidr_block" {
-  description = "The CIDR block of the VPC"
-  value       = module.vpc.vpc_cidr_block
+output "private_subnets_pods_cluster1" {
+  description = "Private subnet IDs for pods (RFC6598) - Cluster 1"
+  value       = slice(module.vpc_cluster1.private_subnets, 3, 6)
 }
 
-output "private_subnets" {
-  description = "List of IDs of private subnets"
-  value       = module.vpc.private_subnets
+output "public_subnets_cluster1" {
+  description = "Public subnet IDs - Cluster 1"
+  value       = module.vpc_cluster1.public_subnets
 }
 
-output "private_subnet_arns" {
-  description = "List of ARNs of private subnets"
-  value       = module.vpc.private_subnet_arns
+# Cluster 2 - CNOE DIY
+output "vpc_id_cluster2" {
+  description = "VPC ID for Cluster 2 (CNOE DIY)"
+  value       = module.vpc_cluster2.vpc_id
 }
 
-output "private_subnets_cidr_blocks" {
-  description = "List of cidr_blocks of private subnets"
-  value       = module.vpc.private_subnets_cidr_blocks
+output "private_subnets_nodes_cluster2" {
+  description = "Private subnet IDs for nodes - Cluster 2"
+  value       = slice(module.vpc_cluster2.private_subnets, 0, 3)
 }
 
-output "public_subnets" {
-  description = "List of IDs of public subnets"
-  value       = module.vpc.public_subnets
+output "private_subnets_pods_cluster2" {
+  description = "Private subnet IDs for pods (RFC6598) - Cluster 2"
+  value       = slice(module.vpc_cluster2.private_subnets, 3, 6)
 }
 
-output "public_subnet_arns" {
-  description = "List of ARNs of public subnets"
-  value       = module.vpc.public_subnet_arns
+output "public_subnets_cluster2" {
+  description = "Public subnet IDs - Cluster 2"
+  value       = module.vpc_cluster2.public_subnets
 }
 
-output "public_subnets_cidr_blocks" {
-  description = "List of cidr_blocks of public subnets"
-  value       = module.vpc.public_subnets_cidr_blocks
+# Cluster 3 - Apps Platform
+output "vpc_id_cluster3" {
+  description = "VPC ID for Cluster 3 (Apps Platform)"
+  value       = module.vpc_cluster3.vpc_id
 }
 
-output "nat_public_ips" {
-  description = "List of public Elastic IPs created for AWS NAT Gateway"
-  value       = module.vpc.nat_public_ips
+output "private_subnets_nodes_cluster3" {
+  description = "Private subnet IDs for nodes - Cluster 3"
+  value       = slice(module.vpc_cluster3.private_subnets, 0, 3)
 }
 
-output "natgw_ids" {
-  description = "List of NAT Gateway IDs"
-  value       = module.vpc.natgw_ids
+output "private_subnets_pods_cluster3" {
+  description = "Private subnet IDs for pods (RFC6598) - Cluster 3"
+  value       = slice(module.vpc_cluster3.private_subnets, 3, 6)
 }
 
-output "igw_id" {
-  description = "The ID of the Internet Gateway"
-  value       = module.vpc.igw_id
+output "public_subnets_cluster3" {
+  description = "Public subnet IDs - Cluster 3"
+  value       = module.vpc_cluster3.public_subnets
 }
 
-output "igw_arn" {
-  description = "The ARN of the Internet Gateway"
-  value       = module.vpc.igw_arn
+# Peering connections
+output "peering_c1_c2" {
+  description = "VPC Peering Connection ID between Cluster 1 and Cluster 2"
+  value       = aws_vpc_peering_connection.cluster1_to_cluster2.id
+}
+
+output "peering_c1_c3" {
+  description = "VPC Peering Connection ID between Cluster 1 and Cluster 3"
+  value       = aws_vpc_peering_connection.cluster1_to_cluster3.id
+}
+
+output "peering_c2_c3" {
+  description = "VPC Peering Connection ID between Cluster 2 and Cluster 3"
+  value       = aws_vpc_peering_connection.cluster2_to_cluster3.id
 }

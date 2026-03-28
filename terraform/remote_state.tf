@@ -1,9 +1,4 @@
 data "terraform_remote_state" "platform-execution-role" {
-  # backend = "local"
-  # config = {
-  #   path = "${path.module}/platform-execution-role/terraform.tfstate"
-  # }
-
   backend = "s3"
   config = {
     bucket = "BUCKETNAME"
@@ -12,9 +7,11 @@ data "terraform_remote_state" "platform-execution-role" {
   }
 }
 
-# data "terraform_remote_state" "git" {
-#   backend = "local"
-#   config = {
-#     path = "${path.module}/../codecommit/terraform.tfstate"
-#   }
-# }
+data "terraform_remote_state" "networking" {
+  backend = "s3"
+  config = {
+    bucket = "BUCKETNAME"
+    key    = "controlplane/tfstate/psp-networking.tfstate"
+    region = "REGION"
+  }
+}
