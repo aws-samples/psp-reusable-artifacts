@@ -1,0 +1,7 @@
+{
+  "chartUrl": "970479985461.dkr.ecr.us-east-1.amazonaws.com",
+  "chartName": "credit-card",
+  "chartVersion": "0.1.0",
+  "clusterName": "credit-card-development",
+  "namespace": "credit-card"
+}

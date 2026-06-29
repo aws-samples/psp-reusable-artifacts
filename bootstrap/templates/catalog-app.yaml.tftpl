@@ -1,0 +1,23 @@
+# =============================================================================
+# ArgoCD Application — syncs the catalog/ RGDs to the control-plane cluster
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: catalog
+  namespace: argocd
+spec:
+  project: control-plane
+  source:
+    repoURL: ${git_repo_url}
+    targetRevision: main
+    path: catalog
+  destination:
+    server: ${cluster_arn}
+    namespace: kro-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ApplyOutOfSyncOnly=true

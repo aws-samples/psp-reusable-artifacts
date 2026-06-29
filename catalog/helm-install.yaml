@@ -1,0 +1,89 @@
+# =============================================================================
+# Helm Install (RGD)
+# =============================================================================
+# Creates an ArgoCD Application that installs a Helm chart against a target
+# cluster. Used to bootstrap workloads on newly provisioned spoke clusters.
+# =============================================================================
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: helm-install
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: HelmInstall
+    group: platform.controlplane.io
+
+    types:
+      HelmValue:
+        name: "string | required=true"
+        value: "string | required=true"
+
+    spec:
+      # Identity
+      name: string | required=true description="Release name"
+      runtime: string | required=true description="Runtime this belongs to"
+      environment: string | required=true description="Environment (production/staging/development)"
+
+      # Target cluster
+      clusterArn: string | required=true description="ARN of the target EKS cluster"
+
+      # Helm chart
+      repoURL: string | required=true description="Helm chart repository URL"
+      chart: string | required=true description="Helm chart name"
+      targetRevision: string | default=* description="Chart version"
+      namespace: string | required=true description="Target namespace for the release"
+
+      # Values
+      values: string | description="Inline Helm values (YAML string)"
+      parameters: "[]HelmValue | description=\"Individual Helm value overrides\""
+
+      # Sync policy
+      autoSync: "boolean | default=true"
+      prune: "boolean | default=true"
+      selfHeal: "boolean | default=true"
+      createNamespace: "boolean | default=true"
+
+    status:
+      applicationName: ${argoApp.metadata.name}
+
+  resources:
+    - id: argoApp
+      template:
+        apiVersion: argoproj.io/v1alpha1
+        kind: Application
+        metadata:
+          name: ${schema.spec.runtime}-${schema.spec.name}
+          namespace: argocd
+          labels:
+            platform.controlplane.io/runtime: ${schema.spec.runtime}
+            platform.controlplane.io/environment: ${schema.spec.environment}
+            platform.controlplane.io/type: helm-install
+          finalizers:
+            - resources-finalizer.argocd.argoproj.io
+        spec:
+          project: control-plane
+          source:
+            repoURL: ${schema.spec.repoURL}
+            chart: ${schema.spec.chart}
+            targetRevision: ${schema.spec.targetRevision}
+            helm:
+              releaseName: ${schema.spec.name}
+              values: ${schema.spec.values}
+              parameters: ${schema.spec.parameters}
+          destination:
+            server: ${schema.spec.clusterArn}
+            namespace: ${schema.spec.namespace}
+          syncPolicy:
+            automated:
+              prune: ${schema.spec.prune}
+              selfHeal: ${schema.spec.selfHeal}
+            syncOptions:
+              - "CreateNamespace=${string(schema.spec.createNamespace)}"
+              - ApplyOutOfSyncOnly=true
+            retry:
+              limit: 3
+              backoff:
+                duration: 30s
+                factor: 2
+                maxDuration: 3m

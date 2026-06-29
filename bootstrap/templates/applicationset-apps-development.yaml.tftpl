@@ -1,0 +1,57 @@
+# =============================================================================
+# ArgoCD ApplicationSet — deploys Helm apps to spoke development clusters
+# =============================================================================
+# Uses multi-source: OCI Helm chart from ECR + values.yaml from Git.
+# The config.json in each apps/ folder provides chart coordinates.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-development
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: ${git_repo_url}
+        revision: main
+        files:
+          - path: runtime/development/*/apps/config.json
+  template:
+    metadata:
+      name: "${"{{index .path.segments 2}}-apps-development"}"
+      namespace: argocd
+      labels:
+        environment: development
+        cluster: "${"{{index .path.segments 2}}"}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: control-plane
+      sources:
+        - repoURL: "${"{{.chartUrl}}"}"
+          chart: "${"{{.chartName}}"}"
+          targetRevision: "${"{{.chartVersion}}"}"
+          helm:
+            valueFiles:
+              - "$values/runtime/development/${"{{index .path.segments 2}}"}/apps/values.yaml"
+        - repoURL: ${git_repo_url}
+          targetRevision: main
+          ref: values
+      destination:
+        name: "${"{{.clusterName}}"}"
+        namespace: "${"{{.namespace}}"}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 3m

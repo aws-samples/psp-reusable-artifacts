@@ -1,0 +1,3 @@
+soft-fail: false
+skip-check:
+  - CKV_TF_1 # Module sources use registry versioning instead of commit hashes

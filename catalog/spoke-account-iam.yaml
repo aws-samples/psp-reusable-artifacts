@@ -1,0 +1,41 @@
+# =============================================================================
+# Spoke Account IAM Mapping (RGD)
+# =============================================================================
+# Maps a Kubernetes namespace to the spoke account's execution role so ACK
+# automatically assumes the correct cross-account role for that namespace.
+# =============================================================================
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: spoke-account-iam
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: SpokeAccountIAM
+    group: platform.controlplane.io
+
+    spec:
+      name: string | required=true description="Runtime identifier"
+      spokeAccountId: string | required=true description="AWS account ID of the spoke"
+      executionRoleName: string | default=control-plane-execution description="Execution role name in the spoke"
+      namespace: string | required=true description="K8s namespace mapped to this spoke"
+
+    status:
+      roleSelectorName: ${roleSelector.metadata.name}
+      roleSelectorArn: ${roleSelector.spec.arn}
+
+  resources:
+    - id: roleSelector
+      template:
+        apiVersion: services.k8s.aws/v1alpha1
+        kind: IAMRoleSelector
+        metadata:
+          name: ${schema.spec.name}-role-selector
+          labels:
+            platform.controlplane.io/runtime: ${schema.spec.name}
+            platform.controlplane.io/spoke-account: ${schema.spec.spokeAccountId}
+        spec:
+          arn: "arn:aws:iam::${schema.spec.spokeAccountId}:role/${schema.spec.executionRoleName}"
+          namespaceSelector:
+            names:
+              - ${schema.spec.namespace}

@@ -1,0 +1,23 @@
+cluster_name             = ""
+kubernetes_version       = ""
+region                   = ""
+vpc_cidr                 = ""
+organization_id          = ""
+git_repo_url             = ""
+idc_instance_arn         = ""
+argocd_admin_group_id    = ""
+argocd_readonly_group_id = ""
+
+################################################################################
+# Spoke Account Configuration
+################################################################################
+spoke_account_id         = ""
+spoke_region             = ""
+spoke_vpc_id             = ""
+spoke_subnet_ids         = ["", ""]
+spoke_kubernetes_version = ""
+
+tags = {
+  ManagedBy = "terraform"
+  Project   = "control-plane"
+}

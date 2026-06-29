@@ -1,0 +1,16 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowHubControlPlaneAdmin",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::970479985461:role/control-plane-admin"
+        },
+        "Action": [
+          "sts:AssumeRole",
+          "sts:TagSession"
+        ]
+      }
+    ]
+  }

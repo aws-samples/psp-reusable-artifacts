@@ -1,0 +1,49 @@
+# =============================================================================
+# ArgoCD ApplicationSet — auto-discovers runtime/development/*/data-plane folders
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: dataplane-development
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: ${git_repo_url}
+        revision: main
+        directories:
+          - path: runtime/development/*/data-plane
+  template:
+    metadata:
+      name: "${"{{index .path.segments 2}}-dataplane-development"}"
+      namespace: argocd
+      labels:
+        environment: development
+        runtime: "${"{{index .path.segments 2}}"}"
+        layer: dataplane
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: control-plane
+      source:
+        repoURL: ${git_repo_url}
+        targetRevision: main
+        path: "${"{{.path.path}}"}"
+      destination:
+        server: ${cluster_arn}
+        namespace: "${"{{index .path.segments 2}}"}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 3m

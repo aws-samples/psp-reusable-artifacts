@@ -1,0 +1,3 @@
+region            = ""
+argocd_server_url = ""
+argocd_api_token = ""

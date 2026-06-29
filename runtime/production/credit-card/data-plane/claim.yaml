@@ -1,0 +1,127 @@
+# =============================================================================
+# Credit Card Runtime — Production (Data Plane)
+# =============================================================================
+# Sync waves ensure SpokeAccountIAM is created before EKS and Helm installs.
+# =============================================================================
+---
+# Namespace with ACK default region annotation
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: credit-card-production
+  annotations:
+    services.k8s.aws/default-region: us-east-1
+    argocd.argoproj.io/sync-wave: "0"
+---
+# Spoke Account IAM Mapping — MUST be created first
+apiVersion: platform.controlplane.io/v1alpha1
+kind: SpokeAccountIAM
+metadata:
+  name: credit-card-production-iam
+  namespace: credit-card-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  name: credit-card-production
+  spokeAccountId: "279663917975"
+  executionRoleName: control-plane-execution
+  namespace: credit-card-production
+---
+# EKS Cluster (Auto Mode) — depends on IAM mapping
+apiVersion: platform.controlplane.io/v1alpha1
+kind: EKSCluster
+metadata:
+  name: credit-card-production
+  namespace: credit-card-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  name: credit-card-production
+  region: us-east-1
+  accountId: "279663917975"
+  subnetIds:
+    - subnet-041b5c60f946cdf3c
+    - subnet-0f3d101c8be4687e2
+    - subnet-0ab0df124fd3f8e1a
+  version: "1.33"
+  endpointPrivateAccess: true
+  endpointPublicAccess: true
+  authenticationMode: API
+  autoModeEnabled: true
+  nodePools:
+    - general-purpose
+    - system
+  addons:
+    - name: amazon-cloudwatch-observability
+    - name: aws-guardduty-agent
+    - name: eks-pod-identity-agent
+  enableLogging: true
+  capabilityRoleArn: "arn:aws:iam::787843526639:role/control-plane-admin"
+---
+# Helm Install — observability stack — depends on EKS cluster
+apiVersion: platform.controlplane.io/v1alpha1
+kind: HelmInstall
+metadata:
+  name: credit-card-production-monitoring
+  namespace: credit-card-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  name: kube-prometheus-stack
+  runtime: credit-card
+  environment: production
+  clusterArn: "arn:aws:eks:us-east-1:279663917975:cluster/credit-card-production"
+  repoURL: https://prometheus-community.github.io/helm-charts
+  chart: kube-prometheus-stack
+  targetRevision: "65.*"
+  namespace: monitoring
+  autoSync: true
+  prune: true
+  selfHeal: true
+  createNamespace: true
+  values: |
+    grafana:
+      enabled: true
+      ingress:
+        enabled: false
+    prometheus:
+      prometheusSpec:
+        retention: 15d
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 50Gi
+    alertmanager:
+      enabled: true
+---
+# Helm Install — ingress controller — depends on EKS cluster
+apiVersion: platform.controlplane.io/v1alpha1
+kind: HelmInstall
+metadata:
+  name: credit-card-production-ingress
+  namespace: credit-card-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  name: aws-load-balancer-controller
+  runtime: credit-card
+  environment: production
+  clusterArn: "arn:aws:eks:us-east-1:279663917975:cluster/credit-card-production"
+  repoURL: https://aws.github.io/eks-charts
+  chart: aws-load-balancer-controller
+  targetRevision: "1.*"
+  namespace: kube-system
+  autoSync: true
+  prune: true
+  selfHeal: true
+  createNamespace: false
+  parameters:
+    - name: clusterName
+      value: credit-card-production
+    - name: region
+      value: us-east-1
+    - name: vpcId
+      value: vpc-0ef6bba8ecc8eb8db

@@ -1,0 +1,314 @@
+# =============================================================================
+# EKS Cluster with Auto Mode (RGD)
+# =============================================================================
+# Provisions an EKS cluster in a spoke account using Auto Mode.
+# No managed node groups or node roles needed — Auto Mode handles compute.
+# =============================================================================
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: eks-cluster
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: EKSCluster
+    group: platform.controlplane.io
+
+    types:
+      EKSAddon:
+        name: "string | required=true"
+        version: "string"
+
+    spec:
+      # Cluster identity
+      name: "string | required=true"
+      region: "string | required=true"
+      accountId: "string | required=true"
+
+      # Networking
+      subnetIds: "[]string | required=true"
+      securityGroupIds: "[]string"
+
+      # Cluster config
+      version: "string | default=1.33"
+      endpointPrivateAccess: "boolean | default=true"
+      endpointPublicAccess: "boolean | default=false"
+      authenticationMode: "string | default=API"
+
+      # Auto Mode — compute config
+      autoModeEnabled: "boolean | default=true"
+      nodePools: "[]string"
+
+      # Addons (on top of Auto Mode defaults)
+      addons: "[]EKSAddon"
+
+      # Logging
+      enableLogging: "boolean | default=true"
+
+      # ArgoCD registration — hub account capability role
+      capabilityRoleArn: string | required=true description="ARN of the ArgoCD capability role in the hub account"
+
+    status:
+      clusterArn: ${cluster.status.ackResourceMetadata.arn}
+      clusterEndpoint: ${cluster.status.endpoint}
+      clusterStatus: ${cluster.status.status}
+      oidcIssuer: ${cluster.status.identity.oidc.issuer}
+      certificateAuthority: ${cluster.status.certificateAuthority.data}
+
+  resources:
+    # ================================================================
+    # IAM Role for EKS Cluster (Auto Mode)
+    # ================================================================
+
+    - id: clusterRole
+      template:
+        apiVersion: iam.services.k8s.aws/v1alpha1
+        kind: Role
+        metadata:
+          name: ${schema.spec.name}-cluster-role
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          name: ${schema.spec.name}-cluster-role
+          assumeRolePolicyDocument: |
+            {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Service": "eks.amazonaws.com"},
+                "Action": ["sts:AssumeRole", "sts:TagSession"]
+              }]
+            }
+          policies:
+            - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+            - arn:aws:iam::aws:policy/AmazonEKSComputePolicy
+            - arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy
+            - arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy
+            - arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy
+          tags:
+            - key: Name
+              value: ${schema.spec.name}-cluster-role
+
+    # ================================================================
+    # IAM Role for EKS Auto Mode Nodes
+    # ================================================================
+
+    - id: nodeRole
+      template:
+        apiVersion: iam.services.k8s.aws/v1alpha1
+        kind: Role
+        metadata:
+          name: ${schema.spec.name}-node-role
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          name: ${schema.spec.name}-node-role
+          assumeRolePolicyDocument: |
+            {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Service": "ec2.amazonaws.com"},
+                "Action": "sts:AssumeRole"
+              }]
+            }
+          policies:
+            - arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy
+            - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly
+          tags:
+            - key: Name
+              value: ${schema.spec.name}-node-role
+
+    # ================================================================
+    # EKS Cluster (Auto Mode)
+    # ================================================================
+
+    - id: cluster
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: Cluster
+        metadata:
+          name: ${schema.spec.name}
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          name: ${schema.spec.name}
+          version: ${schema.spec.version}
+          roleARN: ${clusterRole.status.ackResourceMetadata.arn}
+          accessConfig:
+            authenticationMode: ${schema.spec.authenticationMode}
+          computeConfig:
+            enabled: ${schema.spec.autoModeEnabled}
+            nodePools: ${schema.spec.nodePools}
+            nodeRoleARN: ${nodeRole.status.ackResourceMetadata.arn}
+          kubernetesNetworkConfig:
+            elasticLoadBalancing:
+              enabled: ${schema.spec.autoModeEnabled}
+          storageConfig:
+            blockStorage:
+              enabled: ${schema.spec.autoModeEnabled}
+          resourcesVPCConfig:
+            subnetIDs: ${schema.spec.subnetIds}
+            endpointPrivateAccess: ${schema.spec.endpointPrivateAccess}
+            endpointPublicAccess: ${schema.spec.endpointPublicAccess}
+          logging:
+            clusterLogging:
+              - enabled: ${schema.spec.enableLogging}
+                types:
+                  - api
+                  - audit
+                  - authenticator
+                  - controllerManager
+                  - scheduler
+          tags:
+            Name: ${schema.spec.name}
+
+    # ================================================================
+    # Access Entry — grants ArgoCD capability role cluster admin
+    # ================================================================
+    # ArgoCD uses EKS Access Entries directly. The hub account's
+    # ArgoCD role needs an access entry on each spoke cluster.
+    # ================================================================
+
+    - id: accessEntry
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: AccessEntry
+        metadata:
+          name: ${schema.spec.name}-argocd-access
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          clusterName: ${cluster.spec.name}
+          principalARN: ${schema.spec.capabilityRoleArn}
+          accessPolicies:
+            - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+              accessScope:
+                type: cluster
+          type: STANDARD
+
+    # ================================================================
+    # Access Entry — grants node role Auto Mode permissions
+    # ================================================================
+
+    - id: nodeAccessEntry
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: AccessEntry
+        metadata:
+          name: ${schema.spec.name}-node-access
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          clusterName: ${cluster.spec.name}
+          principalARN: ${nodeRole.status.ackResourceMetadata.arn}
+          accessPolicies:
+            - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSAutoNodePolicy
+              accessScope:
+                type: cluster
+          type: EC2
+
+    # ================================================================
+    # ArgoCD Cluster Secret — registers spoke cluster with ArgoCD
+    # ================================================================
+    # ArgoCD uses EKS Access Entries directly with the hub's
+    # capability role. No awsAuthConfig needed.
+    # ================================================================
+
+    - id: argocdCluster
+      template:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${cluster.spec.name}
+          namespace: argocd
+          labels:
+            argocd.argoproj.io/secret-type: cluster
+            platform.controlplane.io/runtime: ${cluster.spec.name}
+            platform.controlplane.io/account: ${schema.spec.accountId}
+        stringData:
+          name: ${cluster.spec.name}
+          server: ${cluster.status.ackResourceMetadata.arn}
+          project: control-plane
+
+    # ================================================================
+    # EKS Addons (optional, on top of Auto Mode defaults)
+    # ================================================================
+
+    - id: addons
+      includeWhen:
+        - ${has(schema.spec.addons) && size(schema.spec.addons) > 0}
+      forEach:
+        - addon: ${schema.spec.addons}
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: Addon
+        metadata:
+          name: ${cluster.spec.name}-${addon.name}
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          clusterName: ${cluster.spec.name}
+          name: ${addon.name}
+          resolveConflicts: OVERWRITE
+          tags:
+            Name: ${cluster.spec.name}-${addon.name}
+
+    # ================================================================
+    # GuardDuty Agent IAM Role (conditional — only if addon requested)
+    # ================================================================
+    # Created only when aws-guardduty-agent is in the addons list.
+    # The agent needs guardduty:SendSecurityTelemetry to publish
+    # runtime findings to the GuardDuty backend.
+    # ================================================================
+
+    - id: guarddutyRole
+      includeWhen:
+        - ${has(schema.spec.addons) && schema.spec.addons.exists(a, a.name == "aws-guardduty-agent")}
+      template:
+        apiVersion: iam.services.k8s.aws/v1alpha1
+        kind: Role
+        metadata:
+          name: ${cluster.spec.name}-guardduty-agent
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          name: ${cluster.spec.name}-guardduty-agent
+          assumeRolePolicyDocument: |
+            {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Service": "pods.eks.amazonaws.com"},
+                "Action": ["sts:AssumeRole", "sts:TagSession"]
+              }]
+            }
+          inlinePolicies:
+            guardduty-runtime:
+              '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["guardduty:SendSecurityTelemetry"],"Resource":"*"}]}'
+          tags:
+            - key: Name
+              value: ${cluster.spec.name}-guardduty-agent
+
+    # ================================================================
+    # GuardDuty Pod Identity Association (conditional)
+    # ================================================================
+    # Maps the aws-guardduty-agent service account to the IAM role
+    # so the agent gets credentials via EKS Pod Identity.
+    # ================================================================
+
+    - id: guarddutyPodIdentity
+      includeWhen:
+        - ${has(schema.spec.addons) && schema.spec.addons.exists(a, a.name == "aws-guardduty-agent")}
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: PodIdentityAssociation
+        metadata:
+          name: ${cluster.spec.name}-guardduty-agent
+          annotations:
+            services.k8s.aws/region: ${schema.spec.region}
+        spec:
+          clusterName: ${cluster.spec.name}
+          namespace: amazon-guardduty
+          serviceAccount: aws-guardduty-agent
+          roleARN: ${guarddutyRole.status.ackResourceMetadata.arn}

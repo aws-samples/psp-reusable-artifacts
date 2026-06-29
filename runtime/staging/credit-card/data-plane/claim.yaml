@@ -1,0 +1,122 @@
+# =============================================================================
+# Credit Card Runtime — Staging (Data Plane)
+# =============================================================================
+# Sync waves ensure SpokeAccountIAM is created before EKS and Helm installs.
+# =============================================================================
+---
+# Namespace with ACK default region annotation
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: credit-card-staging
+  annotations:
+    services.k8s.aws/default-region: us-east-1
+    argocd.argoproj.io/sync-wave: "0"
+---
+# Spoke Account IAM Mapping — MUST be created first
+apiVersion: platform.controlplane.io/v1alpha1
+kind: SpokeAccountIAM
+metadata:
+  name: credit-card-staging-iam
+  namespace: credit-card-staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  name: credit-card-staging
+  spokeAccountId: "REPLACE_WITH_STAGING_ACCOUNT_ID"
+  executionRoleName: control-plane-execution
+  namespace: credit-card-staging
+---
+# EKS Cluster (Auto Mode) — depends on IAM mapping
+apiVersion: platform.controlplane.io/v1alpha1
+kind: EKSCluster
+metadata:
+  name: credit-card-staging
+  namespace: credit-card-staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  name: credit-card-staging
+  region: us-east-1
+  accountId: "REPLACE_WITH_STAGING_ACCOUNT_ID"
+  subnetIds:
+    - REPLACE_WITH_SUBNET_1
+    - REPLACE_WITH_SUBNET_2
+    - REPLACE_WITH_SUBNET_3
+  version: "1.33"
+  endpointPrivateAccess: true
+  endpointPublicAccess: true
+  authenticationMode: API
+  autoModeEnabled: true
+  nodePools:
+    - general-purpose
+    - system
+  addons:
+    - name: amazon-cloudwatch-observability
+    - name: eks-pod-identity-agent
+  enableLogging: true
+  capabilityRoleArn: "arn:aws:iam::787843526639:role/control-plane-admin"
+---
+# Helm Install — observability — depends on EKS cluster
+apiVersion: platform.controlplane.io/v1alpha1
+kind: HelmInstall
+metadata:
+  name: credit-card-staging-monitoring
+  namespace: credit-card-staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  name: kube-prometheus-stack
+  runtime: credit-card
+  environment: staging
+  clusterArn: "arn:aws:eks:us-east-1:REPLACE_WITH_STAGING_ACCOUNT_ID:cluster/credit-card-staging"
+  repoURL: https://prometheus-community.github.io/helm-charts
+  chart: kube-prometheus-stack
+  targetRevision: "65.*"
+  namespace: monitoring
+  autoSync: true
+  prune: true
+  selfHeal: true
+  createNamespace: true
+  values: |
+    grafana:
+      enabled: true
+    prometheus:
+      prometheusSpec:
+        retention: 7d
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 20Gi
+---
+# Helm Install — ingress controller — depends on EKS cluster
+apiVersion: platform.controlplane.io/v1alpha1
+kind: HelmInstall
+metadata:
+  name: credit-card-staging-ingress
+  namespace: credit-card-staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  name: aws-load-balancer-controller
+  runtime: credit-card
+  environment: staging
+  clusterArn: "arn:aws:eks:us-east-1:REPLACE_WITH_STAGING_ACCOUNT_ID:cluster/credit-card-staging"
+  repoURL: https://aws.github.io/eks-charts
+  chart: aws-load-balancer-controller
+  targetRevision: "1.*"
+  namespace: kube-system
+  autoSync: true
+  prune: true
+  selfHeal: true
+  createNamespace: false
+  parameters:
+    - name: clusterName
+      value: credit-card-staging
+    - name: region
+      value: us-east-1
+    - name: vpcId
+      value: REPLACE_WITH_VPC_ID

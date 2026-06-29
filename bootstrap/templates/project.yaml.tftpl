@@ -1,0 +1,58 @@
+# =============================================================================
+# ArgoCD AppProject — scopes what the runtime ApplicationSets can deploy
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: control-plane
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Control plane operations — runtime claims for EKS clusters and Helm installs
+
+  sourceNamespaces:
+    - argocd
+
+  # Allow sources from our Git repo and any Helm repo
+  sourceRepos:
+    - "*"
+
+  # Allow deploying to any cluster registered in ArgoCD, any namespace
+  destinations:
+    - server: "*"
+      namespace: "*"
+
+  # Allowed cluster-scoped resources
+  clusterResourceWhitelist:
+    - group: kro.run
+      kind: "*"
+    - group: platform.controlplane.io
+      kind: "*"
+    - group: ""
+      kind: Namespace
+    - group: services.k8s.aws
+      kind: IAMRoleSelector
+
+  # Allowed namespace-scoped resources
+  namespaceResourceWhitelist:
+    - group: kro.run
+      kind: "*"
+    - group: platform.controlplane.io
+      kind: "*"
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: "*"
+    - group: batch
+      kind: "*"
+    - group: networking.k8s.io
+      kind: "*"
+    - group: argoproj.io
+      kind: "*"
+    - group: services.k8s.aws
+      kind: "*"
+    - group: iam.services.k8s.aws
+      kind: "*"
+    - group: eks.services.k8s.aws
+      kind: "*"

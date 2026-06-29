@@ -1,0 +1,54 @@
+# =============================================================================
+# ArgoCD ApplicationSet — deploys Helm apps to spoke staging clusters
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-staging
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: ${git_repo_url}
+        revision: main
+        files:
+          - path: runtime/staging/*/apps/config.json
+  template:
+    metadata:
+      name: "${"{{index .path.segments 2}}-apps-staging"}"
+      namespace: argocd
+      labels:
+        environment: staging
+        cluster: "${"{{index .path.segments 2}}"}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: control-plane
+      sources:
+        - repoURL: "${"{{.chartUrl}}"}"
+          chart: "${"{{.chartName}}"}"
+          targetRevision: "${"{{.chartVersion}}"}"
+          helm:
+            valueFiles:
+              - "$values/runtime/staging/${"{{index .path.segments 2}}"}/apps/values.yaml"
+        - repoURL: ${git_repo_url}
+          targetRevision: main
+          ref: values
+      destination:
+        name: "${"{{.clusterName}}"}"
+        namespace: "${"{{.namespace}}"}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 3m

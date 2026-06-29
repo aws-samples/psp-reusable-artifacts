@@ -1,0 +1,201 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "EKSClusterManagement",
+            "Effect": "Allow",
+            "Action": [
+                "eks:CreateCluster",
+                "eks:DeleteCluster",
+                "eks:DescribeCluster",
+                "eks:UpdateClusterConfig",
+                "eks:UpdateClusterVersion",
+                "eks:TagResource",
+                "eks:UntagResource",
+                "eks:ListTagsForResource",
+                "eks:CreateAddon",
+                "eks:AssociateAccessPolicy",
+                "eks:CreateCapability",
+                "eks:CreateAccessEntry",
+                "eks:CreateNodegroup",
+                "eks:CreatePodIdentityAssociation",
+                "eks:ListNodegroups",
+                "eks:DescribePodIdentityAssociation",
+                "eks:DeletePodIdentityAssociation",
+                "eks:ListPodIdentityAssociations",
+                "eks:UpdatePodIdentityAssociation"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "EKSAddons",
+            "Effect": "Allow",
+            "Action": [
+                "eks:CreateAddon",
+                "eks:DeleteAddon",
+                "eks:DescribeAddon",
+                "eks:DescribeAddonVersions",
+                "eks:UpdateAddon",
+                "eks:TagResource",
+                "eks:UntagResource"
+            ],
+            "Resource": "arn:aws:eks:*:*:addon/*/*/*"
+        },
+        {
+            "Sid": "EKSAccessEntries",
+            "Effect": "Allow",
+            "Action": [
+                "eks:CreateAccessEntry",
+                "eks:DeleteAccessEntry",
+                "eks:DescribeAccessEntry",
+                "eks:ListAccessEntries",
+                "eks:AssociateAccessPolicy",
+                "eks:DisassociateAccessPolicy",
+                "eks:ListAssociatedAccessPolicies",
+                "eks:TagResource"
+            ],
+            "Resource": [
+                "arn:aws:eks:*:*:access-entry/*/*/*/*/*",
+                "arn:aws:eks:*:*:cluster/*"
+            ]
+        },
+        {
+            "Sid": "EKSDiscovery",
+            "Effect": "Allow",
+            "Action": [
+                "eks:DescribeCluster",
+                "eks:ListClusters",
+                "eks:ListAddons",
+                "eks:DescribeAddonVersions"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "IAMRoleManagement",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:GetRole",
+                "iam:UpdateRole",
+                "iam:TagRole",
+                "iam:UntagRole",
+                "iam:UpdateAssumeRolePolicy",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:ListAttachedRolePolicies",
+                "iam:ListRolePolicies",
+                "iam:ListRoleTags",
+                "iam:PutRolePolicy",
+                "iam:DeleteRolePolicy",
+                "iam:GetRolePolicy"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "IAMPassRoleToEKS",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": [
+                "*"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": [
+                        "eks.amazonaws.com",
+                        "ec2.amazonaws.com",
+                        "pods.eks.amazonaws.com"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "IAMAttachAutoModePolicies",
+            "Effect": "Allow",
+            "Action": [
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/*-cluster-role",
+                "arn:aws:iam::*:role/*-node-role"
+            ],
+            "Condition": {
+                "ArnLike": {
+                    "iam:PolicyARN": [
+                        "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
+                        "arn:aws:iam::aws:policy/AmazonEKSComputePolicy",
+                        "arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy",
+                        "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy",
+                        "arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy",
+                        "arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy",
+                        "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "EC2NetworkingReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeRouteTables",
+                "ec2:DescribeAvailabilityZones",
+                "ec2:DescribeNetworkInterfaces"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "EC2SecurityGroupForEKS",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateSecurityGroup",
+                "ec2:DeleteSecurityGroup",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:RevokeSecurityGroupIngress",
+                "ec2:RevokeSecurityGroupEgress",
+                "ec2:CreateTags",
+                "ec2:DeleteTags"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CloudWatchLogsForEKS",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:DeleteLogGroup",
+                "logs:PutRetentionPolicy",
+                "logs:DescribeLogGroups",
+                "logs:TagLogGroup",
+                "logs:TagResource"
+            ],
+            "Resource": "arn:aws:logs:*:*:log-group:/aws/eks/*"
+        },
+        {
+            "Sid": "IAMGetRoleForValidation",
+            "Effect": "Allow",
+            "Action": "iam:GetRole",
+            "Resource": "*"
+        },
+        {
+            "Sid": "IAMServiceLinkedRole",
+            "Effect": "Allow",
+            "Action": "iam:CreateServiceLinkedRole",
+            "Resource": "arn:aws:iam::*:role/aws-service-role/*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:AWSServiceName": [
+                        "eks.amazonaws.com",
+                        "eks-auto.amazonaws.com"
+                    ]
+                }
+            }
+        }
+    ]
+}
