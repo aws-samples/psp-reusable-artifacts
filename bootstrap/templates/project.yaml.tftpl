@@ -23,36 +23,14 @@ spec:
     - server: "*"
       namespace: "*"
 
-  # Allowed cluster-scoped resources
+  # Allowed cluster-scoped resources. Broad by design: workload charts such as
+  # kube-prometheus-stack and aws-load-balancer-controller install CRDs and
+  # ClusterRoles, so the platform project must permit cluster-scoped kinds.
   clusterResourceWhitelist:
-    - group: kro.run
+    - group: "*"
       kind: "*"
-    - group: platform.controlplane.io
-      kind: "*"
-    - group: ""
-      kind: Namespace
-    - group: services.k8s.aws
-      kind: IAMRoleSelector
 
   # Allowed namespace-scoped resources
   namespaceResourceWhitelist:
-    - group: kro.run
-      kind: "*"
-    - group: platform.controlplane.io
-      kind: "*"
-    - group: ""
-      kind: "*"
-    - group: apps
-      kind: "*"
-    - group: batch
-      kind: "*"
-    - group: networking.k8s.io
-      kind: "*"
-    - group: argoproj.io
-      kind: "*"
-    - group: services.k8s.aws
-      kind: "*"
-    - group: iam.services.k8s.aws
-      kind: "*"
-    - group: eks.services.k8s.aws
+    - group: "*"
       kind: "*"

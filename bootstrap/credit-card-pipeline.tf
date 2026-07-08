@@ -15,7 +15,12 @@ locals {
   java_repo_name       = "credit-card-java"
   data_plane_repo_name = "credit-card-data-plane"
   java_ecr_name        = "credit-card"
-  chart_ecr_name       = "credit-card-chart"
+  # The Helm chart is named "credit-card" in Chart.yaml, so `helm push` stores
+  # it at <registry>/<basepath>/credit-card. We push under the "charts/"
+  # basepath to keep the chart in its own ECR repo, separate from the Java
+  # image repo (also "credit-card"). Otherwise chart + image collide and the
+  # pipeline's describe-images picks the wrong artifact.
+  chart_ecr_name       = "charts/credit-card"
 }
 
 ################################################################################
@@ -56,6 +61,16 @@ resource "aws_ecr_repository" "credit_card_java" {
   image_scanning_configuration {
     scan_on_push = true
   }
+
+  tags = var.tags
+}
+
+# Dedicated ECR repository for the packaged Helm chart (OCI). ECR does not
+# create repositories on push, so it must exist before `helm push`.
+resource "aws_ecr_repository" "credit_card_chart" {
+  name                 = local.chart_ecr_name
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   tags = var.tags
 }
@@ -169,7 +184,8 @@ resource "aws_iam_role_policy" "codebuild_credit_card" {
           "ecr:DescribeImages"
         ]
         Resource = [
-          aws_ecr_repository.credit_card_java.arn
+          aws_ecr_repository.credit_card_java.arn,
+          aws_ecr_repository.credit_card_chart.arn
         ]
       },
       {
@@ -215,10 +231,14 @@ resource "aws_iam_role_policy" "codebuild_credit_card" {
         ]
       },
       {
-        Sid      = "StartBuild"
-        Effect   = "Allow"
-        Action   = "codebuild:StartBuild"
-        Resource = "*"
+        Sid    = "StartBuild"
+        Effect = "Allow"
+        Action = "codebuild:StartBuild"
+        Resource = [
+          aws_codebuild_project.credit_card_java.arn,
+          aws_codebuild_project.credit_card_chart.arn,
+          aws_codebuild_project.credit_card_update_ops.arn
+        ]
       }
     ]
   })
@@ -437,7 +457,7 @@ resource "aws_codebuild_project" "credit_card_chart" {
               sed -i "s|repository:.*|repository: $IMAGE_ECR_REPO|" data-plane/credit-card/values.yaml
             - helm package data-plane/credit-card
             - CHART_VERSION=$(grep '^version:' data-plane/credit-card/Chart.yaml | awk '{print $2}')
-            - helm push credit-card-$CHART_VERSION.tgz oci://$CHART_ECR_REPO
+            - helm push credit-card-$CHART_VERSION.tgz oci://$CHART_ECR_REPO/charts
       artifacts:
         files:
           - '**/*'
@@ -498,6 +518,16 @@ resource "aws_codebuild_project" "credit_card_update_ops" {
       name  = "JAVA_ECR_NAME"
       value = local.java_ecr_name
     }
+    # The apps ApplicationSet reads clusterName + namespace from config.json,
+    # so they must be preserved on every regeneration.
+    environment_variable {
+      name  = "CLUSTER_NAME"
+      value = "credit-card-development"
+    }
+    environment_variable {
+      name  = "APP_NAMESPACE"
+      value = "credit-card"
+    }
   }
 
   source {
@@ -520,32 +550,17 @@ resource "aws_codebuild_project" "credit_card_update_ops" {
                 --arg url "$CHART_ECR_REPO" \
                 --arg name "$CHART_ECR_NAME" \
                 --arg version "$CHART_VERSION" \
-                '{chartUrl: $url, chartName: $name, chartVersion: $version}')
+                --arg cluster "$CLUSTER_NAME" \
+                --arg ns "$APP_NAMESPACE" \
+                '{chartUrl: $url, chartName: $name, chartVersion: $version, clusterName: $cluster, namespace: $ns}')
 
               CONFIG_B64=$(echo "$CONFIG_JSON" | base64)
 
-              # Build the values.yaml content with the new image tag
-              VALUES_CONTENT=$(cat <<VALEOF
-replicaCount: 2
-
-image:
-  repository: $IMAGE_ECR_REPO
-  tag: "$IMAGE_TAG"
-  pullPolicy: IfNotPresent
-
-service:
-  type: ClusterIP
-  port: 8080
-
-resources:
-  requests:
-    cpu: 100m
-    memory: 256Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
-VALEOF
-              )
+              # Build the values.yaml content with the new image tag.
+              # Uses printf (not a column-0 heredoc) so the buildspec stays
+              # uniformly indented and remains valid YAML after the Terraform
+              # indented-heredoc (<<-) dedent.
+              VALUES_CONTENT=$(printf 'replicaCount: 2\n\nimage:\n  repository: %s\n  tag: "%s"\n  pullPolicy: IfNotPresent\n\nservice:\n  type: ClusterIP\n  port: 8080\n\nresources:\n  requests:\n    cpu: 100m\n    memory: 256Mi\n  limits:\n    cpu: 500m\n    memory: 512Mi\n' "$IMAGE_ECR_REPO" "$IMAGE_TAG")
               VALUES_B64=$(echo "$VALUES_CONTENT" | base64)
 
               PUT_FILES=$(echo '[]' | jq \
