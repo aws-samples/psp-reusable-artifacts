@@ -34,9 +34,11 @@ spec:
       targetRevision: string | default=* description="Chart version"
       namespace: string | required=true description="Target namespace for the release"
 
-      # Values
-      values: string | description="Inline Helm values (YAML string)"
-      parameters: "[]HelmValue | description=\"Individual Helm value overrides\""
+      # Values — both are optional; defaults let KRO resolve the template when
+      # a HelmInstall provides only one of them (e.g. monitoring uses `values`,
+      # ingress uses `parameters`).
+      values: string | default="" description="Inline Helm values (YAML string)"
+      parameters: "[]HelmValue | default=[] description=\"Individual Helm value overrides\""
 
       # Sync policy
       autoSync: "boolean | default=true"
@@ -81,6 +83,10 @@ spec:
             syncOptions:
               - "CreateNamespace=${string(schema.spec.createNamespace)}"
               - ApplyOutOfSyncOnly=true
+              # Server-side apply avoids the last-applied-configuration
+              # annotation size limit that large CRDs (e.g. Prometheus) exceed,
+              # which otherwise keeps the app perpetually OutOfSync.
+              - ServerSideApply=true
             retry:
               limit: 3
               backoff:
